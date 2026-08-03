@@ -1,0 +1,114 @@
+"use client";
+
+import { useState, useRef } from "react";
+import { useHarmoniumStore } from "@/store/useHarmoniumStore";
+import { useLibraryStore } from "@/store/useLibraryStore";
+import { useProfileStore } from "@/store/useProfileStore";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { startAudioCapture, stopAudioCapture } from "../engine/audioEngine";
+
+export function RecordingControls() {
+  const { isRecording, startRecording, stopRecording, recordedNotes } = useHarmoniumStore();
+  const addRecording = useLibraryStore((s) => s.addRecording);
+  const updateStats  = useProfileStore((s) => s.updateStats);
+  const recordingCount = useLibraryStore((s) => s.recordings.length);
+
+  const [recordingName, setRecordingName] = useState("");
+  const [savedBlobUrl, setSavedBlobUrl]   = useState<string | null>(null);
+  const startTimeRef  = useRef<number>(0);
+  const durationRef   = useRef<number>(0);
+
+  async function handleStart() {
+    setRecordingName("");
+    setSavedBlobUrl(null);
+    startTimeRef.current = Date.now();
+    startRecording();
+    await startAudioCapture();
+  }
+
+  async function handleStop() {
+    durationRef.current = Math.round((Date.now() - startTimeRef.current) / 1000);
+    stopRecording();
+    const blob = await stopAudioCapture();
+    if (blob) {
+      setSavedBlobUrl(URL.createObjectURL(blob));
+    }
+  }
+
+  function handleSave() {
+    if (!savedBlobUrl) return;
+    const name = recordingName.trim() || `Recording ${new Date().toLocaleString()}`;
+    addRecording({
+      id: crypto.randomUUID(),
+      uid: "",
+      name,
+      durationSeconds: durationRef.current,
+      createdAt: new Date(),
+      storageUrl: null,
+      isFavorite: false,
+      notes: "",
+      tags: [],
+      instrument: "harmonium",
+      blobUrl: savedBlobUrl,
+    });
+    updateStats({ recordingsCount: recordingCount + 1 });
+    setSavedBlobUrl(null);
+    setRecordingName("");
+  }
+
+  function handleDiscard() {
+    if (savedBlobUrl) URL.revokeObjectURL(savedBlobUrl);
+    setSavedBlobUrl(null);
+    setRecordingName("");
+  }
+
+  return (
+    <Card>
+      <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider mb-3">
+        Recording
+      </p>
+      <div className="flex flex-wrap gap-2 items-center">
+        {!isRecording && !savedBlobUrl && (
+          <Button variant="surface" size="sm" onClick={handleStart}>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]" />
+            Record
+          </Button>
+        )}
+
+        {isRecording && (
+          <>
+            <span className="flex items-center gap-1.5 text-xs text-[#EF4444] font-medium">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444] rec-dot" />
+              Recording…
+            </span>
+            <Button variant="danger" size="sm" onClick={handleStop}>Stop</Button>
+          </>
+        )}
+
+        {savedBlobUrl && (
+          <div className="w-full flex flex-col gap-2">
+            <audio controls src={savedBlobUrl} className="w-full h-8 rounded-lg" />
+            <div className="flex gap-2 flex-wrap items-center">
+              <input
+                type="text"
+                value={recordingName}
+                onChange={(e) => setRecordingName(e.target.value)}
+                placeholder="Name this recording…"
+                className="flex-1 min-w-0 text-sm bg-[#273548] border border-[#334155] rounded-lg
+                           px-3 py-1.5 text-[#F8FAFC] placeholder:text-[#475569]
+                           focus:outline-none focus:border-[#F59E0B] transition-colors"
+              />
+              <Button size="sm" onClick={handleSave}>Save</Button>
+              <Button variant="ghost" size="sm" onClick={handleDiscard}>Discard</Button>
+            </div>
+          </div>
+        )}
+
+        {isRecording && recordedNotes.length > 0 && (
+          <span className="text-xs text-[#64748B]">{recordedNotes.length} notes</span>
+        )}
+      </div>
+    </Card>
+  );
+}
