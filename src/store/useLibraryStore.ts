@@ -255,7 +255,13 @@ export const useLibraryStore = create<LibraryState>()(
           ),
         })),
       deleteRecording: (id) =>
-        set((state) => ({ recordings: state.recordings.filter((recording) => recording.id !== id) })),
+        set((state) => {
+          const recordingToDelete = state.recordings.find((recording) => recording.id === id);
+          if (recordingToDelete?.blobUrl) {
+            URL.revokeObjectURL(recordingToDelete.blobUrl);
+          }
+          return { recordings: state.recordings.filter((recording) => recording.id !== id) };
+        }),
       toggleFavorite: (id) =>
         set((state) => ({
           recordings: state.recordings.map((recording) =>
@@ -315,7 +321,9 @@ export const useLibraryStore = create<LibraryState>()(
 
       deleteSession: (id) =>
         set((state) => {
-          stopPracticeAudio();
+          if (state.activeSessionId === id) {
+            stopPracticeAudio();
+          }
           const nextSessions = state.sessions.filter((session) => session.id !== id);
           const nextSelected =
             state.selectedSessionId === id ? nextSessions[0]?.id ?? null : state.selectedSessionId;
@@ -511,7 +519,7 @@ export const useLibraryStore = create<LibraryState>()(
 
         if (tablaCard) {
           useTablaStore.getState().applyConfig(tablaCard.config);
-          useTablaStore.getState().setPlaying(true);
+          useTablaStore.getState().setPlaying(tablaCard.config.autoPlay);
         } else {
           useTablaStore.getState().reset();
         }
@@ -543,7 +551,9 @@ export const useLibraryStore = create<LibraryState>()(
       },
 
       pauseSession: (id) => {
-        stopPracticeAudio();
+        if (get().activeSessionId === id) {
+          stopPracticeAudio();
+        }
         const now = new Date();
         set((state) => ({
           activeSessionId: state.activeSessionId === id ? null : state.activeSessionId,
@@ -562,7 +572,9 @@ export const useLibraryStore = create<LibraryState>()(
       },
 
       completeSession: (id) => {
-        stopPracticeAudio();
+        if (get().activeSessionId === id) {
+          stopPracticeAudio();
+        }
         const now = new Date();
         set((state) => ({
           activeSessionId: state.activeSessionId === id ? null : state.activeSessionId,

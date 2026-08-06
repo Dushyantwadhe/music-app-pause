@@ -244,3 +244,70 @@ export function stopRhythm() {
 export function updateBpm(bpm: number) {
   if (schedulerOpts) schedulerOpts = { ...schedulerOpts, bpm };
 }
+
+let mediaRecorder: MediaRecorder | null = null;
+let recordedChunks: BlobPart[] = [];
+let recordingDest: MediaStreamAudioDestinationNode | null = null;
+
+function clearAudioCapture() {
+  if (!recordingDest) return;
+  try { masterGain?.disconnect(recordingDest); } catch { /* ignore */ }
+  recordingDest = null;
+}
+
+export async function startTablaAudioCapture(onError?: (message: string) => void): Promise<void> {
+  if (typeof MediaRecorder === "undefined") {
+    throw new Error("Recording is not supported by this browser.");
+  }
+  if (mediaRecorder?.state === "recording") {
+    throw new Error("A recording is already in progress.");
+  }
+
+  clearAudioCapture();
+  const audioContext = getCtx();
+  recordingDest = audioContext.createMediaStreamDestination();
+  masterGain?.connect(recordingDest);
+  recordedChunks = [];
+
+  const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+    ? "audio/webm;codecs=opus"
+    : "audio/webm";
+
+  try {
+    mediaRecorder = new MediaRecorder(recordingDest.stream, { mimeType });
+  } catch {
+    clearAudioCapture();
+    throw new Error("Recording could not be initialized in this browser.");
+  }
+
+  mediaRecorder.ondataavailable = (event) => {
+    if (event.data.size > 0) recordedChunks.push(event.data);
+  };
+  mediaRecorder.onerror = () => {
+    mediaRecorder = null;
+    recordedChunks = [];
+    clearAudioCapture();
+    onError?.("Recording stopped unexpectedly. Please try again.");
+  };
+  mediaRecorder.start(100);
+}
+
+export async function stopTablaAudioCapture(): Promise<Blob | null> {
+  if (!mediaRecorder || mediaRecorder.state === "inactive") return null;
+
+  return new Promise((resolve) => {
+    mediaRecorder!.onstop = () => {
+      const mimeType = mediaRecorder?.mimeType ?? "audio/webm";
+      const blob = new Blob(recordedChunks, { type: mimeType });
+      recordedChunks = [];
+      clearAudioCapture();
+      mediaRecorder = null;
+      resolve(blob);
+    };
+    try {
+      mediaRecorder!.stop();
+    } catch {
+      resolve(null);
+    }
+  });
+}

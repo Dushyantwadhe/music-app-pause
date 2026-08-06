@@ -19,7 +19,9 @@ Turn Riyaaz from a capable collection of practice tools into a dependable daily 
 - **Completed:** Returning users have a one-click Continue Practice card for the paused, active, or most recently updated session.
 - **Completed:** Sessions track actual active practice time across Start, Pause, and Finish; Profile totals now reflect recorded practice rather than planned duration.
 - **Audit complete:** No remaining React update loop was found in the current session/instrument flow.
-- **Next reliability fixes:** Keep tool selection from changing saved autoplay/drone settings; make taal selection non-autoplaying; cancel stale Tabla beat UI callbacks after stop; surface in-progress MediaRecorder errors.
+- **Completed:** Session audio controls now stop only the active session, and saved tabla autoplay/drone settings are preserved while configuring tools.
+- **Completed:** Taal selection is non-autoplaying, Tabla cancels stale beat UI callbacks after stop, and in-progress MediaRecorder failures are surfaced clearly.
+- **Completed:** Harmonium recordings have a compact, collapsible manager with a custom player, delete flow, and a focused save dialog.
 - **Next:** Validate the starter sessions with target learners, then design the complete first-run onboarding and further simplify advanced instrument controls.
 
 ## Product principles

@@ -71,7 +71,8 @@ export const useHarmoniumStore = create<HarmoniumState>()(
           tuningMode: config.tuningMode ?? "equal",
           toneMode: config.toneMode ?? "basic",
           bellowsExpression: config.bellowsExpression ?? 0.7,
-          drone: config.autoEnableDrone ? config.drone : "off",
+          // Keep saved drone selection stable while editing session cards.
+          drone: config.drone,
         }),
 
       addActiveNote: (note) =>

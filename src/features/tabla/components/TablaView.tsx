@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { useTablaStore } from "@/store/useTablaStore";
 import { useTablaEngine } from "../hooks/useTablaEngine";
 import { BeatVisualizer } from "./BeatVisualizer";
+import { TablaRecordingControls } from "./TablaRecordingControls";
 import { Slider } from "@/components/ui/Slider";
 import { Button } from "@/components/ui/Button";
 import { Badge, Card } from "@/components/ui/Card";
@@ -130,6 +131,8 @@ export function TablaView() {
           )}
         </div>
       </Card>
+
+      <TablaRecordingControls />
 
       <Card className="p-3">
         <div className="flex flex-col gap-3">

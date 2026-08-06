@@ -403,7 +403,7 @@ function TablaCardPanel({ sessionId, card, onUpdate }: TablaCardPanelProps) {
         thaatContext,
         presetSlots,
         isMetronomeMode: mode === "metronome",
-        autoPlay: false,
+        autoPlay: card.config.autoPlay,
       },
     } as Partial<TablaSessionCard>);
   }, [
