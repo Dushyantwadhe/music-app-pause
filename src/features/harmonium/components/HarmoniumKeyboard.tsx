@@ -6,8 +6,8 @@ import { cn } from "@/lib/cn";
 import { sargamForNote } from "../utils/sargam";
 
 interface KeyboardProps {
-  onNoteOn:  (note: string, velocity?: number) => void;
-  onNoteOff: (note: string) => void;
+  onNoteOn:  (note: string, velocity?: number, source?: string) => void;
+  onNoteOff: (note: string, source?: string) => void;
 }
 
 export function HarmoniumKeyboard({ onNoteOn, onNoteOff }: KeyboardProps) {
@@ -44,11 +44,11 @@ export function HarmoniumKeyboard({ onNoteOn, onNoteOff }: KeyboardProps) {
     return {
       onPointerDown: (e: React.PointerEvent) => {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-        onNoteOn(note, 1);
+        onNoteOn(note, 1, `pointer:${e.pointerId}`);
       },
-      onPointerUp:     () => onNoteOff(note),
-      onPointerLeave:  () => onNoteOff(note),
-      onPointerCancel: () => onNoteOff(note),
+      onPointerUp: (e: React.PointerEvent) => onNoteOff(note, `pointer:${e.pointerId}`),
+      onPointerCancel: (e: React.PointerEvent) => onNoteOff(note, `pointer:${e.pointerId}`),
+      onLostPointerCapture: (e: React.PointerEvent) => onNoteOff(note, `pointer:${e.pointerId}`),
     };
   }
 

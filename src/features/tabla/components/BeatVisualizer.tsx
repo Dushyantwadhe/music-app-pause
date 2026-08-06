@@ -13,27 +13,23 @@ export function BeatVisualizer() {
   const activePattern = resolved.variant?.pattern?.length ? resolved.variant.pattern : taal.pattern;
 
   // Group beats by vibhag and compute Sam / Tali / Khali markers
-  let beatOffset = 0;
-  let taliCount  = 1; // Tali starts at 2 (Sam = X, then Tali 2, 3…)
-
-  const vibhags = taal.vibhags.map((count, vi) => {
-    const beats   = activePattern.slice(beatOffset, beatOffset + count);
-    beatOffset   += count;
-    const isSam   = beats[0]?.isSam ?? false;
+  const vibhags = taal.vibhags.reduce<{
+    groups: { beats: typeof activePattern; isSam: boolean; isKhali: boolean; vi: number; marker: string }[];
+    beatOffset: number;
+    taliCount: number;
+  }>((result, count, vi) => {
+    const beats = activePattern.slice(result.beatOffset, result.beatOffset + count);
+    const isSam = beats[0]?.isSam ?? false;
     const isKhali = beats[0]?.isKhali ?? false;
+    const marker = vi === 0 ? "X" : isKhali ? "0" : String(result.taliCount + 1);
 
-    let marker: string;
-    if (vi === 0) {
-      marker = "X"; // Sam is always first vibhag, shown as X
-    } else if (isKhali) {
-      marker = "0"; // Khali = empty wave
-    } else {
-      taliCount++;
-      marker = String(taliCount); // Tali 2, 3, 4…
-    }
-
-    return { beats, isSam, isKhali, vi, marker };
-  });
+    result.groups.push({ beats, isSam, isKhali, vi, marker });
+    return {
+      groups: result.groups,
+      beatOffset: result.beatOffset + count,
+      taliCount: isKhali || vi === 0 ? result.taliCount : result.taliCount + 1,
+    };
+  }, { groups: [], beatOffset: 0, taliCount: 1 }).groups;
 
   return (
     <div className="flex flex-col gap-3" aria-label={`${selectedTaal} beat pattern`}>

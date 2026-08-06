@@ -27,37 +27,42 @@ export function useHarmoniumEngine() {
     addRecordedNote,
   } = useHarmoniumStore();
 
-  const pressedKeys       = useRef<Set<string>>(new Set());
+  const activeSources     = useRef<Map<string, Set<string>>>(new Map());
   const noteStartTimes    = useRef<Map<string, number>>(new Map());
-  const keyboardNoteMap   = useRef<Map<string, string>>(new Map());
+  const keyboardNoteMap   = useRef<Map<string, { note: string; source: string }>>(new Map());
 
   const panicStopAll = useCallback(() => {
-    if (pressedKeys.current.size === 0) {
-      stopAllNotes();
-      return;
-    }
-
-    for (const note of pressedKeys.current) {
-      stopNote(note);
+    for (const note of activeSources.current.keys()) {
       removeActiveNote(note);
     }
-
-    pressedKeys.current.clear();
+    stopAllNotes();
+    activeSources.current.clear();
     noteStartTimes.current.clear();
     keyboardNoteMap.current.clear();
   }, [removeActiveNote]);
 
-  const handleNoteOn = useCallback((note: string, velocity = 1) => {
-    if (pressedKeys.current.has(note)) return;
-    pressedKeys.current.add(note);
+  const handleNoteOn = useCallback((note: string, velocity = 1, source = "pointer") => {
+    const sources = activeSources.current.get(note) ?? new Set<string>();
+    if (sources.has(source)) return;
+
+    const wasInactive = sources.size === 0;
+    sources.add(source);
+    activeSources.current.set(note, sources);
+    if (!wasInactive) return;
+
     noteStartTimes.current.set(note, Date.now());
     playNote(note, volume, sustain, transpose, rootNote, tuningMode, toneMode, bellowsExpression, velocity);
     addActiveNote(note);
   }, [addActiveNote, bellowsExpression, rootNote, sustain, toneMode, transpose, tuningMode, volume]);
 
-  const handleNoteOff = useCallback((note: string) => {
-    if (!pressedKeys.current.has(note)) return;
-    pressedKeys.current.delete(note);
+  const handleNoteOff = useCallback((note: string, source = "pointer") => {
+    const sources = activeSources.current.get(note);
+    if (!sources?.has(source)) return;
+
+    sources.delete(source);
+    if (sources.size > 0) return;
+
+    activeSources.current.delete(note);
     stopNote(note);
     removeActiveNote(note);
     if (isRecording) {
@@ -77,15 +82,16 @@ export function useHarmoniumEngine() {
       const noteOct      = semi >= 12 ? octave + 1 : octave;
       const semitoneInOct = semi % 12;
       const note = `${NOTE_NAMES[semitoneInOct]}${noteOct}`;
-      keyboardNoteMap.current.set(e.key.toLowerCase(), note);
-      handleNoteOn(note, 1);
+      const source = `keyboard:${e.code}`;
+      keyboardNoteMap.current.set(e.key.toLowerCase(), { note, source });
+      handleNoteOn(note, 1, source);
     };
     const onKeyUp = (e: KeyboardEvent) => {
       const lowered = e.key.toLowerCase();
-      const note = keyboardNoteMap.current.get(lowered);
-      if (!note) return;
+      const activeKey = keyboardNoteMap.current.get(lowered);
+      if (!activeKey) return;
       keyboardNoteMap.current.delete(lowered);
-      handleNoteOff(note);
+      handleNoteOff(activeKey.note, activeKey.source);
     };
 
     const onWindowBlur = () => {
@@ -98,15 +104,26 @@ export function useHarmoniumEngine() {
       }
     };
 
+    const onPointerEnd = (event: PointerEvent) => {
+      const source = `pointer:${event.pointerId}`;
+      for (const [note, sources] of Array.from(activeSources.current.entries())) {
+        if (sources.has(source)) handleNoteOff(note, source);
+      }
+    };
+
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup",   onKeyUp);
     window.addEventListener("blur", onWindowBlur);
     document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pointerup", onPointerEnd);
+    window.addEventListener("pointercancel", onPointerEnd);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup",   onKeyUp);
       window.removeEventListener("blur", onWindowBlur);
       document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pointerup", onPointerEnd);
+      window.removeEventListener("pointercancel", onPointerEnd);
       panicStopAll();
     };
   }, [octave, handleNoteOn, handleNoteOff, panicStopAll]);
@@ -145,9 +162,9 @@ export function useHarmoniumEngine() {
           const note = midiToNote(noteNumber);
 
           if (status === 0x90 && velocity > 0) {
-            handleNoteOn(note, velocity);
+            handleNoteOn(note, velocity, `midi:${input.id}:${noteNumber}`);
           } else if (status === 0x80 || (status === 0x90 && velocity === 0)) {
-            handleNoteOff(note);
+            handleNoteOff(note, `midi:${input.id}:${noteNumber}`);
           }
         };
 
@@ -177,4 +194,3 @@ export function useHarmoniumEngine() {
 
   return { handleNoteOn, handleNoteOff };
 }
-

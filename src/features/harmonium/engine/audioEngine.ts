@@ -170,24 +170,26 @@ export function playNote(
 export function stopNote(note: string) {
   const voice = voices.get(note);
   if (!voice) return;
+  // Remove the voice immediately so a quick repeat of the same key can start a new sound.
+  voices.delete(note);
   const ctx_ = getCtx();
   const t = ctx_.currentTime;
   voice.gainNode.gain.cancelScheduledValues(t);
   voice.gainNode.gain.setValueAtTime(voice.gainNode.gain.value, t);
-  // Release: 350ms fade to silence
-  voice.gainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+  // Short release keeps the instrument responsive and avoids notes hanging after input ends.
+  voice.gainNode.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
   setTimeout(() => {
     try {
       voice.osc1.stop(); voice.osc2.stop(); voice.osc3.stop();
       voice.osc1.disconnect(); voice.osc2.disconnect(); voice.osc3.disconnect();
       voice.filterNode.disconnect(); voice.gainNode.disconnect();
     } catch { /* already stopped */ }
-    voices.delete(note);
-  }, 380);
+    if (voices.get(note) === voice) voices.delete(note);
+  }, 150);
 }
 
 export function stopAllNotes() {
-  for (const note of voices.keys()) stopNote(note);
+  for (const note of Array.from(voices.keys())) stopNote(note);
 }
 
 export function setMasterVolume(v: number) {
@@ -281,12 +283,23 @@ let mediaRecorder: MediaRecorder | null = null;
 let recordedChunks: BlobPart[] = [];
 let recordingDest: MediaStreamAudioDestinationNode | null = null;
 
-export async function startAudioCapture(): Promise<void> {
-  // Disconnect previous destination to avoid accumulating connections
+function clearAudioCapture() {
   if (recordingDest) {
     try { masterGain?.disconnect(recordingDest); } catch { /* ignore */ }
     recordingDest = null;
   }
+}
+
+export async function startAudioCapture(onError?: (message: string) => void): Promise<void> {
+  if (typeof MediaRecorder === "undefined") {
+    throw new Error("Recording is not supported by this browser.");
+  }
+  if (mediaRecorder?.state === "recording") {
+    throw new Error("A recording is already in progress.");
+  }
+
+  // Disconnect previous destination to avoid accumulating connections
+  clearAudioCapture();
 
   const ctx_ = getCtx();
   recordingDest = ctx_.createMediaStreamDestination();
@@ -297,28 +310,40 @@ export async function startAudioCapture(): Promise<void> {
     ? "audio/webm;codecs=opus"
     : "audio/webm";
 
-  mediaRecorder = new MediaRecorder(recordingDest.stream, { mimeType });
+  try {
+    mediaRecorder = new MediaRecorder(recordingDest.stream, { mimeType });
+  } catch {
+    clearAudioCapture();
+    throw new Error("Recording could not be initialized in this browser.");
+  }
   mediaRecorder.ondataavailable = (e) => {
     if (e.data.size > 0) recordedChunks.push(e.data);
+  };
+  mediaRecorder.onerror = () => {
+    mediaRecorder = null;
+    recordedChunks = [];
+    clearAudioCapture();
+    onError?.("Recording stopped unexpectedly. Please try again.");
   };
   mediaRecorder.start(100);
 }
 
 export async function stopAudioCapture(): Promise<Blob | null> {
   if (!mediaRecorder) return null;
+  if (mediaRecorder.state === "inactive") return null;
   return new Promise((resolve) => {
     mediaRecorder!.onstop = () => {
       const mimeType = mediaRecorder?.mimeType ?? "audio/webm";
       const blob = new Blob(recordedChunks, { type: mimeType });
       recordedChunks = [];
-      // Disconnect recording destination
-      if (recordingDest) {
-        try { masterGain?.disconnect(recordingDest); } catch { /* ignore */ }
-        recordingDest = null;
-      }
+      clearAudioCapture();
       mediaRecorder = null;
       resolve(blob);
     };
-    mediaRecorder!.stop();
+    try {
+      mediaRecorder!.stop();
+    } catch {
+      resolve(null);
+    }
   });
 }

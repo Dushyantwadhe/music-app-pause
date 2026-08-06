@@ -14,6 +14,10 @@ const TABS = [
     label: "Harmonium",
   },
   {
+    href: "/tanpura",
+    label: "Tanpura",
+  },
+  {
     href: "/tabla",
     label: "Tabla",
   },

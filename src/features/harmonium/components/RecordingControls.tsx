@@ -16,23 +16,47 @@ export function RecordingControls() {
 
   const [recordingName, setRecordingName] = useState("");
   const [savedBlobUrl, setSavedBlobUrl]   = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
   const startTimeRef  = useRef<number>(0);
   const durationRef   = useRef<number>(0);
 
   async function handleStart() {
+    if (isStarting) return;
+    if (savedBlobUrl) URL.revokeObjectURL(savedBlobUrl);
+    setError(null);
     setRecordingName("");
     setSavedBlobUrl(null);
-    startTimeRef.current = Date.now();
-    startRecording();
-    await startAudioCapture();
+    setIsStarting(true);
+    try {
+      await startAudioCapture((message) => {
+        stopRecording();
+        setError(message);
+      });
+      startTimeRef.current = Date.now();
+      startRecording();
+    } catch (captureError) {
+      const message = captureError instanceof Error ? captureError.message : "Recording could not start.";
+      setError(message);
+      stopRecording();
+    } finally {
+      setIsStarting(false);
+    }
   }
 
   async function handleStop() {
+    setError(null);
     durationRef.current = Math.round((Date.now() - startTimeRef.current) / 1000);
     stopRecording();
-    const blob = await stopAudioCapture();
-    if (blob) {
+    try {
+      const blob = await stopAudioCapture();
+      if (!blob || blob.size === 0) {
+        setError("No audio was captured. Please try recording again.");
+        return;
+      }
       setSavedBlobUrl(URL.createObjectURL(blob));
+    } catch {
+      setError("Recording could not be saved. Please try again.");
     }
   }
 
@@ -70,9 +94,9 @@ export function RecordingControls() {
       </p>
       <div className="flex flex-wrap gap-2 items-center">
         {!isRecording && !savedBlobUrl && (
-          <Button variant="surface" size="sm" onClick={handleStart}>
+          <Button variant="surface" size="sm" onClick={handleStart} disabled={isStarting}>
             <span className="h-2.5 w-2.5 rounded-full bg-[#dc2626]" />
-            Record
+            {isStarting ? "Starting…" : "Record"}
           </Button>
         )}
 
@@ -107,6 +131,9 @@ export function RecordingControls() {
           <span className="text-xs text-[#6b7280]">{recordedNotes.length} notes</span>
         )}
       </div>
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-[#b91c1c]">{error}</p>
+      )}
     </Card>
   );
 }

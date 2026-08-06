@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge, Card } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
@@ -11,13 +10,13 @@ import { useHarmoniumStore } from "@/store/useHarmoniumStore";
 import { useTablaStore } from "@/store/useTablaStore";
 import { HarmoniumView } from "@/features/harmonium/components/HarmoniumView";
 import { TablaView } from "@/features/tabla/components/TablaView";
-import type { HarmoniumSessionCard, PracticeSessionCard, TablaSessionCard } from "@/types";
+import type { HarmoniumSessionCard, PracticeSession, PracticeSessionCard, TablaSessionCard } from "@/types";
 
 const AVAILABLE_CARDS = [
   {
     type: "harmonium" as const,
     title: "Harmonium",
-    subtitle: "Keys, drone, transpose",
+    subtitle: "Keys, Sa, octave",
   },
   {
     type: "tabla" as const,
@@ -26,8 +25,35 @@ const AVAILABLE_CARDS = [
   },
 ];
 
-function cardTypeLabel(card: PracticeSessionCard) {
-  return card.type === "harmonium" ? "Harmonium" : "Tabla";
+function practiceStepSummary(card: PracticeSessionCard) {
+  if (card.type === "harmonium") {
+    return `${card.config.rootNote} Sa`;
+  }
+
+  return `${card.config.taalName} · ${card.config.bpm} BPM`;
+}
+
+function formatPracticeTime(seconds: number) {
+  const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const remainder = (seconds % 60).toString().padStart(2, "0");
+  return `${minutes}:${remainder}`;
+}
+
+function PracticeTimer({ session }: { session: PracticeSession }) {
+  const [now, setNow] = useState(() => Date.now());
+  const isRunning = session.status === "playing" && Boolean(session.activePracticeStartedAt);
+
+  useEffect(() => {
+    if (!isRunning) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [isRunning]);
+
+  const savedSeconds = session.actualPracticeSeconds ?? 0;
+  const activeSince = session.activePracticeStartedAt ? new Date(session.activePracticeStartedAt).getTime() : null;
+  const activeSeconds = isRunning && activeSince ? Math.max(0, Math.floor((now - activeSince) / 1000)) : 0;
+
+  return <span className="rounded border border-[#d1d5db] bg-white px-2 py-1 text-xs font-medium text-[#374151]">{formatPracticeTime(savedSeconds + activeSeconds)} practised</span>;
 }
 
 interface SessionDetailViewProps {
@@ -35,17 +61,14 @@ interface SessionDetailViewProps {
 }
 
 export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
-  const router = useRouter();
   const hasHydrated = useLibraryStore((state) => state.hasHydrated);
   const sessions = useLibraryStore((state) => state.sessions);
   const selectSession = useLibraryStore((state) => state.selectSession);
   const focusedCardId = useLibraryStore((state) => state.focusedCardId);
   const focusCard = useLibraryStore((state) => state.focusCard);
   const addSessionCard = useLibraryStore((state) => state.addSessionCard);
-  const removeSessionCard = useLibraryStore((state) => state.removeSessionCard);
   const updateSession = useLibraryStore((state) => state.updateSession);
   const updateSessionCard = useLibraryStore((state) => state.updateSessionCard);
-  const moveSessionCard = useLibraryStore((state) => state.moveSessionCard);
   const playSession = useLibraryStore((state) => state.playSession);
   const pauseSession = useLibraryStore((state) => state.pauseSession);
   const completeSession = useLibraryStore((state) => state.completeSession);
@@ -83,28 +106,14 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
   const currentSession = session;
 
   const attachedCards = [...currentSession.cards].sort((left, right) => left.order - right.order);
+  const enabledCards = attachedCards.filter((card) => card.enabled);
   const focusedCard = attachedCards.find((card) => card.id === focusedCardId) ?? attachedCards[0] ?? null;
   const cardByType = new Map(attachedCards.map((card) => [card.type, card] as const));
+  const isPlaying = currentSession.status === "playing";
 
   function handleOpenTool(type: PracticeSessionCard["type"]) {
     const existing = cardByType.get(type);
     if (existing) {
-      if (existing.type === "harmonium" && existing.config.autoEnableDrone) {
-        updateSessionCard(currentSession.id, existing.id, {
-          config: {
-            ...existing.config,
-            autoEnableDrone: false,
-          },
-        } as Partial<HarmoniumSessionCard>);
-      }
-      if (existing.type === "tabla" && existing.config.autoPlay) {
-        updateSessionCard(currentSession.id, existing.id, {
-          config: {
-            ...existing.config,
-            autoPlay: false,
-          },
-        } as Partial<TablaSessionCard>);
-      }
       focusCard(existing.id);
       if (!existing.enabled) {
         updateSessionCard(currentSession.id, existing.id, { enabled: true });
@@ -121,15 +130,23 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
           ← Sessions
         </Link>
         <div className="flex gap-2">
-          <Button size="sm" variant="surface" onClick={() => pauseSession(currentSession.id)}>Pause</Button>
-          <Button size="sm" onClick={() => playSession(currentSession.id)}>Play</Button>
+          {isPlaying ? (
+            <>
+              <Button size="sm" variant="surface" onClick={() => pauseSession(currentSession.id)}>Pause</Button>
+              <Button size="sm" variant="outline" onClick={() => completeSession(currentSession.id)}>Finish</Button>
+            </>
+          ) : (
+            <Button size="sm" onClick={() => playSession(currentSession.id)} disabled={enabledCards.length === 0}>
+              {currentSession.status === "completed" ? "Practise again" : "Start practice"}
+            </Button>
+          )}
         </div>
       </div>
 
-      <Card className="p-2">
-        <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_220px] md:items-start">
+      <Card className="p-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2">
               <input
                 type="text"
                 value={currentSession.name}
@@ -141,33 +158,55 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
               </Badge>
             </div>
 
-            <p className="mt-0.5 text-[11px] text-[#6b7280]">Session name visible at top while building and playing.</p>
-
-            <textarea
-              value={currentSession.description}
-              onChange={(event) => updateSession(currentSession.id, { description: event.target.value, status: "draft" })}
-              placeholder="Optional short description for this session"
-              className="mt-1 min-h-11 w-full resize-none rounded border border-[#d1d5db] bg-white px-2 py-1.5 text-xs text-[#111827] placeholder:text-[#9ca3af] focus:outline-none"
-            />
+            {currentSession.description && <p className="mt-1 text-xs text-[#6b7280]">{currentSession.description}</p>}
           </div>
+          <span className="rounded border border-[#d1d5db] bg-white px-2 py-1 text-xs font-medium text-[#374151]">{currentSession.durationMinutes} min</span>
+        </div>
+      </Card>
 
-          <div className="grid gap-1 text-[11px] text-[#6b7280]">
-            <div className="rounded border border-[#d1d5db] p-1.5">
-              <p>Attached items</p>
-              <p className="mt-0.5 text-sm font-semibold text-[#111827]">{attachedCards.length}</p>
-            </div>
-            <div className="rounded border border-[#d1d5db] p-1.5">
-              <p>Saved duration</p>
-              <p className="mt-0.5 text-sm font-semibold text-[#111827]">{currentSession.durationMinutes} min</p>
-            </div>
+      <Card className={cn("p-3", isPlaying && "border-[#c89c5d] bg-[#f7f0e2]")}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
+              {isPlaying ? "Practice in progress" : "Your practice plan"}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-[#111827]" aria-live="polite">
+              {isPlaying
+                ? "Your saved instrument settings are active. Pause or finish whenever you are ready."
+                : enabledCards.length > 0
+                  ? "Start practice to apply these settings and begin all enabled tools."
+                  : "Add a harmonium or tabla tool to create a practice plan."}
+            </p>
           </div>
+          <span className="rounded border border-[#d1d5db] bg-white px-2 py-1 text-xs font-medium text-[#374151]">
+            {currentSession.durationMinutes} min planned
+          </span>
+        </div>
+
+        {enabledCards.length > 0 && (
+          <ol className="mt-3 grid gap-2 sm:grid-cols-2">
+            {enabledCards.map((card, index) => (
+              <li key={card.id} className="flex items-center gap-2 rounded border border-[#d1d5db] bg-white px-2.5 py-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#f3ebdd] text-[11px] font-semibold text-[#8a5a2b]">
+                  {index + 1}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-xs font-semibold text-[#111827]">{card.title}</span>
+                  <span className="block truncate text-[11px] text-[#6b7280]">{practiceStepSummary(card)}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+        <div className="mt-3">
+          <PracticeTimer session={currentSession} />
         </div>
       </Card>
 
       <section className="grid gap-2 md:grid-cols-[200px_minmax(0,1fr)] md:items-start">
         <Card className="overflow-hidden p-0">
           <div className="px-2.5 py-1.5">
-            <h2 className="text-xs font-semibold text-[#111827]">Tools</h2>
+            <h2 className="text-xs font-semibold text-[#111827]">Practice tools</h2>
           </div>
           <div className="flex flex-col border-t border-[#d1d5db]">
             {AVAILABLE_CARDS.map((item) => {
@@ -179,7 +218,7 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
                     type="button"
                     onClick={() => handleOpenTool(item.type)}
                     className={cn(
-                      "w-full px-2.5 py-1.5 pr-7 text-left transition-colors",
+                      "w-full px-2.5 py-1.5 text-left transition-colors",
                       isFocused ? "bg-[#f3ebdd] text-[#8a5a2b]" : "bg-[#fdfbf6] text-[#111827] hover:bg-[#f7f0e2]"
                     )}
                   >
@@ -187,18 +226,7 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
                     <p className="mt-0.5 text-[11px] text-[#6b7280]">{card?.title || item.subtitle}</p>
                   </button>
 
-                  {card ? (
-                    <button
-                      type="button"
-                      aria-label={`Remove ${item.title} card`}
-                      onClick={() => removeSessionCard(currentSession.id, card.id)}
-                      className="absolute right-1.5 top-1.5 h-4.5 w-4.5 rounded border border-[#d1d5db] text-[#6b7280] hover:bg-[#f3f4f6]"
-                    >
-                      x
-                    </button>
-                  ) : (
-                    <span className="absolute right-2.5 top-1 text-base leading-none text-[#111827]">+</span>
-                  )}
+                  {!card && <span className="absolute right-2.5 top-1 text-base leading-none text-[#111827]">+</span>}
                 </div>
               );
             })}
@@ -207,8 +235,8 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
 
         <Card className="flex flex-col gap-2 p-2">
           <div>
-            <h2 className="text-sm font-semibold text-[#111827]">Tool Editor</h2>
-            <p className="mt-0.5 text-[11px] text-[#6b7280]">Select a tool from the left to configure and record it.</p>
+            <h2 className="text-sm font-semibold text-[#111827]">Practice setup</h2>
+            <p className="mt-0.5 text-[11px] text-[#6b7280]">Adjust a tool here; your saved settings apply when you start practice.</p>
           </div>
 
           {focusedCard ? (
@@ -234,13 +262,6 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
         </Card>
       </section>
 
-      <div className="flex flex-wrap items-center justify-between gap-1.5 pt-0.5">
-        <Button variant="ghost" onClick={() => router.push("/")}>Back to Home</Button>
-        <div className="flex flex-wrap items-center gap-1.5">
-        <Button variant="surface" onClick={() => updateSession(currentSession.id, { status: "saved" })}>Save Session</Button>
-        <Button variant="outline" onClick={() => completeSession(currentSession.id)}>Complete</Button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -265,6 +286,8 @@ function HarmoniumCardPanel({ sessionId, card, onUpdate }: HarmoniumCardPanelPro
 
   useEffect(() => {
     applyConfig(card.config);
+    // This initializes a selected card. Live control changes are saved below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applyConfig, card.id]);
 
   useEffect(() => {
@@ -313,17 +336,7 @@ function HarmoniumCardPanel({ sessionId, card, onUpdate }: HarmoniumCardPanelPro
 
   return (
     <Card className="flex flex-col gap-2 p-2">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.1em] text-[#6b7280]">Harmonium</p>
-          <input
-            type="text"
-            value={card.title}
-            onChange={(event) => onUpdate(sessionId, card.id, { title: event.target.value })}
-            className="mt-0.5 w-full rounded border border-[#d1d5db] bg-white px-2 py-1 text-sm font-semibold text-[#111827] focus:outline-none"
-          />
-        </div>
-      </div>
+      <p className="text-[11px] uppercase tracking-[0.1em] text-[#6b7280]">Harmonium setup</p>
 
       <div className="rounded border border-[#d1d5db] bg-white">
         <HarmoniumView />
@@ -354,6 +367,8 @@ function TablaCardPanel({ sessionId, card, onUpdate }: TablaCardPanelProps) {
 
   useEffect(() => {
     applyConfig(card.config);
+    // This initializes a selected card. Live control changes are saved below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applyConfig, card.id]);
 
   useEffect(() => {
@@ -411,17 +426,7 @@ function TablaCardPanel({ sessionId, card, onUpdate }: TablaCardPanelProps) {
 
   return (
     <Card className="flex flex-col gap-2 p-2">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.1em] text-[#6b7280]">Tabla</p>
-          <input
-            type="text"
-            value={card.title}
-            onChange={(event) => onUpdate(sessionId, card.id, { title: event.target.value })}
-            className="mt-0.5 w-full rounded border border-[#d1d5db] bg-white px-2 py-1 text-sm font-semibold text-[#111827] focus:outline-none"
-          />
-        </div>
-      </div>
+      <p className="text-[11px] uppercase tracking-[0.1em] text-[#6b7280]">Tabla setup</p>
 
       <div className="rounded border border-[#d1d5db] bg-white">
         <TablaView />

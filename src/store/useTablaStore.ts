@@ -45,7 +45,7 @@ interface TablaState {
 
 export const useTablaStore = create<TablaState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       selectedTaal: "Teentaal",
       bpm: 80,
       pitch: 0,

@@ -14,7 +14,7 @@ export function ProfileView() {
   const sessions = useLibraryStore((s) => s.sessions);
   const favoriteTaals = useTablaStore((s) => s.favoriteTaals);
 
-  const totalMinutes = sessions.reduce((acc, s) => acc + s.durationMinutes, 0);
+  const totalMinutes = Math.floor(sessions.reduce((acc, session) => acc + (session.actualPracticeSeconds ?? 0), 0) / 60);
 
   const stats = [
     { label: "Practice Minutes", value: totalMinutes },
@@ -129,23 +129,6 @@ export function ProfileView() {
             onChange={(v) => patchSetting("defaultOctave", v)}
             formatValue={(v) => `Oct ${v}`}
           />
-          <div>
-            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
-              Default Drone
-            </p>
-            <div className="flex gap-2 flex-wrap">
-              {(["off","sa","pa","sa+pa"] as const).map((d) => (
-                <Button
-                  key={d}
-                  variant={settings.defaultDrone === d ? "primary" : "outline"}
-                  size="sm"
-                  onClick={() => patchSetting("defaultDrone", d)}
-                >
-                  {d}
-                </Button>
-              ))}
-            </div>
-          </div>
           <div>
             <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
               Audio Quality

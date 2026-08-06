@@ -4,7 +4,7 @@ import { useHarmoniumStore } from "@/store/useHarmoniumStore";
 import { Slider } from "@/components/ui/Slider";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import type { DroneMode, HarmoniumToneMode, HarmoniumTuningMode, RootNote } from "@/types";
+import type { HarmoniumToneMode, HarmoniumTuningMode, RootNote } from "@/types";
 
 export function HarmoniumControls() {
   const {
@@ -12,7 +12,6 @@ export function HarmoniumControls() {
     sustain, setSustain,
     octave, setOctave,
     transpose, setTranspose,
-    drone, setDrone,
     rootNote, setRootNote,
     tuningMode, setTuningMode,
     toneMode, setToneMode,
@@ -23,31 +22,15 @@ export function HarmoniumControls() {
   const tuningOptions: HarmoniumTuningMode[] = ["equal", "natural"];
   const toneOptions: HarmoniumToneMode[] = ["basic", "warm-reed"];
 
-  const droneOptions: { value: DroneMode; label: string }[] = [
-    { value: "off",   label: "Off" },
-    { value: "sa",    label: "Sa" },
-    { value: "pa",    label: "Pa" },
-    { value: "sa+pa", label: "Sa+Pa" },
-  ];
-
   return (
     <Card className="flex flex-col gap-4">
-      {/* Sliders row */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4">
         <Slider
           label="Volume"
           value={Math.round(volume * 100)}
           min={0}
           max={100}
           onChange={(v) => setVolume(v / 100)}
-          formatValue={(v) => `${v}%`}
-        />
-        <Slider
-          label="Sustain"
-          value={Math.round(sustain * 100)}
-          min={0}
-          max={100}
-          onChange={(v) => setSustain(v / 100)}
           formatValue={(v) => `${v}%`}
         />
         <Slider
@@ -58,17 +41,9 @@ export function HarmoniumControls() {
           onChange={setOctave}
           formatValue={(v) => `Oct ${v}`}
         />
-        <Slider
-          label="Transpose"
-          value={transpose}
-          min={-6}
-          max={6}
-          onChange={setTranspose}
-          formatValue={(v) => (v === 0 ? "0" : v > 0 ? `+${v}` : `${v}`)}
-        />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#6b7280]">Root Sa</p>
           <select
@@ -82,67 +57,57 @@ export function HarmoniumControls() {
           </select>
         </div>
 
-        <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#6b7280]">Tuning</p>
-          <div className="flex gap-1.5 flex-wrap">
-            {tuningOptions.map((mode) => (
-              <Button
-                key={mode}
-                variant={tuningMode === mode ? "primary" : "outline"}
-                size="sm"
-                onClick={() => setTuningMode(mode)}
-              >
-                {mode === "equal" ? "Equal" : "Natural"}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#6b7280]">Tone</p>
-          <div className="flex gap-1.5 flex-wrap">
-            {toneOptions.map((mode) => (
-              <Button
-                key={mode}
-                variant={toneMode === mode ? "primary" : "outline"}
-                size="sm"
-                onClick={() => setToneMode(mode)}
-              >
-                {mode === "basic" ? "Basic Synth" : "Warm Reed"}
-              </Button>
-            ))}
-          </div>
-        </div>
       </div>
 
-      <Slider
-        label="Bellows"
-        value={Math.round(bellowsExpression * 100)}
-        min={0}
-        max={100}
-        onChange={(v) => setBellowsExpression(v / 100)}
-        formatValue={(v) => `${v}%`}
-      />
-
-      {/* Drone selector */}
-      <div>
-        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#6b7280]">
-          Drone
-        </p>
-        <div className="flex gap-2 flex-wrap">
-          {droneOptions.map((opt) => (
-            <Button
-              key={opt.value}
-              variant={drone === opt.value ? "primary" : "outline"}
-              size="sm"
-              onClick={() => setDrone(opt.value)}
-              aria-pressed={drone === opt.value}
-            >
-              {opt.label}
-            </Button>
-          ))}
+      <details className="border-t border-[#e8e1d4] pt-3">
+        <summary className="cursor-pointer text-xs font-medium text-[#6b7280]">Advanced sound settings</summary>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <Slider
+            label="Sustain"
+            value={Math.round(sustain * 100)}
+            min={0}
+            max={100}
+            onChange={(v) => setSustain(v / 100)}
+            formatValue={(v) => `${v}%`}
+          />
+          <Slider
+            label="Transpose"
+            value={transpose}
+            min={-6}
+            max={6}
+            onChange={setTranspose}
+            formatValue={(v) => (v === 0 ? "0" : v > 0 ? `+${v}` : `${v}`)}
+          />
+          <Slider
+            label="Bellows"
+            value={Math.round(bellowsExpression * 100)}
+            min={0}
+            max={100}
+            onChange={(v) => setBellowsExpression(v / 100)}
+            formatValue={(v) => `${v}%`}
+          />
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#6b7280]">Tuning</p>
+            <div className="flex gap-1.5 flex-wrap">
+              {tuningOptions.map((mode) => (
+                <Button key={mode} variant={tuningMode === mode ? "primary" : "outline"} size="sm" onClick={() => setTuningMode(mode)}>
+                  {mode === "equal" ? "Equal" : "Natural"}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#6b7280]">Tone</p>
+            <div className="flex gap-1.5 flex-wrap">
+              {toneOptions.map((mode) => (
+                <Button key={mode} variant={toneMode === mode ? "primary" : "outline"} size="sm" onClick={() => setToneMode(mode)}>
+                  {mode === "basic" ? "Basic Synth" : "Warm Reed"}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      </details>
     </Card>
   );
 }

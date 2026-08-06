@@ -115,6 +115,8 @@ export interface PracticeSession {
   startedAt: Date;
   endedAt: Date;
   durationMinutes: number;
+  actualPracticeSeconds: number;
+  activePracticeStartedAt: Date | null;
   instrument: "harmonium" | "tabla" | "mixed";
   notes: string;
   isTemplate: boolean;

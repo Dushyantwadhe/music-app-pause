@@ -2,6 +2,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useHarmoniumStore } from "@/store/useHarmoniumStore";
 import { useTablaStore } from "@/store/useTablaStore";
+import { useTanpuraStore } from "@/store/useTanpuraStore";
+import { stopAllNotes, stopDrone } from "@/features/harmonium/engine/audioEngine";
+import { stopRhythm } from "@/features/tabla/engine/rhythmEngine";
+import type { StarterSessionId } from "@/features/library/data/starterSessions";
 import type {
   HarmoniumSessionCard,
   PracticeSession,
@@ -30,6 +34,7 @@ interface LibraryState {
   toggleFavorite: (id: string) => void;
 
   createSession: () => string;
+  createStarterSession: (templateId: StarterSessionId) => string;
   duplicateSession: (id: string) => void;
   deleteSession: (id: string) => void;
   selectSession: (id: string | null) => void;
@@ -109,11 +114,90 @@ function createDefaultSession(): PracticeSession {
     startedAt: now,
     endedAt: now,
     durationMinutes: 20,
+    actualPracticeSeconds: 0,
+    activePracticeStartedAt: null,
     instrument: "mixed",
     notes: "",
     isTemplate: false,
     createdAt: now,
     updatedAt: now,
+  };
+}
+
+function createStarterSession(templateId: StarterSessionId): PracticeSession {
+  const session = createDefaultSession();
+  const harmonium = createDefaultHarmoniumCard();
+  const tabla = createDefaultTablaCard();
+
+  if (templateId === "harmonium-warmup") {
+    return {
+      ...session,
+      name: "10-Minute Harmonium Warm-up",
+      description: "Open Tanpura for a gentle Sa, then explore the keyboard at your own pace.",
+      durationMinutes: 10,
+      instrument: "harmonium",
+      cards: [{
+        ...harmonium,
+        title: "Warm up with Sa",
+        config: {
+          ...harmonium.config,
+          drone: "sa",
+          toneMode: "warm-reed",
+          autoEnableDrone: true,
+        },
+      }],
+    };
+  }
+
+  if (templateId === "teentaal-lay") {
+    return {
+      ...session,
+      name: "15-Minute Teentaal Lay Practice",
+      description: "Follow the Teentaal cycle at 60 BPM. Keep the pulse steady before increasing speed.",
+      durationMinutes: 15,
+      instrument: "tabla",
+      cards: [{
+        ...tabla,
+        title: "Teentaal at 60 BPM",
+        config: {
+          ...tabla.config,
+          bpm: 60,
+          countInBeats: 4,
+          autoPlay: true,
+        },
+      }],
+    };
+  }
+
+  return {
+    ...session,
+    name: "20-Minute Voice & Rhythm",
+      description: "Set Tanpura to Sa + Pa, then sing or play with a calm Teentaal pulse at 70 BPM.",
+    durationMinutes: 20,
+    instrument: "mixed",
+    cards: [
+      {
+        ...harmonium,
+        title: "Pitch reference",
+        order: 0,
+        config: {
+          ...harmonium.config,
+          drone: "off",
+          autoEnableDrone: false,
+        },
+      },
+      {
+        ...tabla,
+        title: "Teentaal at 70 BPM",
+        order: 1,
+        config: {
+          ...tabla.config,
+          bpm: 70,
+          countInBeats: 4,
+          autoPlay: true,
+        },
+      },
+    ],
   };
 }
 
@@ -123,6 +207,22 @@ function normalizeCardOrder(cards: PracticeSessionCard[]) {
 
 function draftStatus(current: SessionStatus): SessionStatus {
   return current === "playing" ? "playing" : "draft";
+}
+
+function accumulatedPracticeSeconds(session: PracticeSession, now = new Date()) {
+  const savedSeconds = session.actualPracticeSeconds ?? 0;
+  if (!session.activePracticeStartedAt) return savedSeconds;
+  const startedAt = new Date(session.activePracticeStartedAt).getTime();
+  return savedSeconds + Math.max(0, Math.floor((now.getTime() - startedAt) / 1000));
+}
+
+function stopPracticeAudio() {
+  stopAllNotes();
+  stopDrone();
+  stopRhythm();
+  useTanpuraStore.getState().setMode("off");
+  useHarmoniumStore.setState({ activeNotes: new Set() });
+  useTablaStore.getState().reset();
 }
 
 function createSessionCard(type: PracticeSessionCard["type"], order: number): PracticeSessionCard {
@@ -175,6 +275,16 @@ export const useLibraryStore = create<LibraryState>()(
         return session.id;
       },
 
+      createStarterSession: (templateId) => {
+        const session = createStarterSession(templateId);
+        set((state) => ({
+          sessions: [session, ...state.sessions],
+          selectedSessionId: session.id,
+          focusedCardId: session.cards[0]?.id ?? null,
+        }));
+        return session.id;
+      },
+
       duplicateSession: (id) =>
         set((state) => {
           const source = state.sessions.find((session) => session.id === id);
@@ -205,6 +315,7 @@ export const useLibraryStore = create<LibraryState>()(
 
       deleteSession: (id) =>
         set((state) => {
+          stopPracticeAudio();
           const nextSessions = state.sessions.filter((session) => session.id !== id);
           const nextSelected =
             state.selectedSessionId === id ? nextSessions[0]?.id ?? null : state.selectedSessionId;
@@ -384,7 +495,8 @@ export const useLibraryStore = create<LibraryState>()(
 
       playSession: (id) => {
         const session = get().sessions.find((entry) => entry.id === id);
-        if (!session) return;
+        if (!session || !session.cards.some((card) => card.enabled)) return;
+        const now = new Date();
 
         const harmoniumCard = session.cards
           .filter((card): card is HarmoniumSessionCard => card.type === "harmonium")
@@ -395,13 +507,6 @@ export const useLibraryStore = create<LibraryState>()(
 
         if (harmoniumCard) {
           useHarmoniumStore.getState().applyConfig(harmoniumCard.config);
-          if (harmoniumCard.config.autoEnableDrone && harmoniumCard.config.drone !== "off") {
-            useHarmoniumStore.getState().setDrone(harmoniumCard.config.drone);
-          } else {
-            useHarmoniumStore.getState().setDrone("off");
-          }
-        } else {
-          useHarmoniumStore.getState().setDrone("off");
         }
 
         if (tablaCard) {
@@ -420,34 +525,58 @@ export const useLibraryStore = create<LibraryState>()(
               ? {
                   ...entry,
                   status: "playing",
-                  lastPlayedAt: new Date(),
-                  updatedAt: new Date(),
+                  activePracticeStartedAt: entry.activePracticeStartedAt ?? now,
+                  lastPlayedAt: now,
+                  updatedAt: now,
                 }
               : entry.id === state.activeSessionId
-              ? { ...entry, status: entry.status === "playing" ? "saved" : entry.status }
+              ? {
+                  ...entry,
+                  status: entry.status === "playing" ? "saved" : entry.status,
+                  actualPracticeSeconds: accumulatedPracticeSeconds(entry, now),
+                  activePracticeStartedAt: null,
+                  updatedAt: now,
+                }
               : entry
           ),
         }));
       },
 
       pauseSession: (id) => {
-        useHarmoniumStore.getState().setDrone("off");
-        useTablaStore.getState().setPlaying(false);
+        stopPracticeAudio();
+        const now = new Date();
         set((state) => ({
           activeSessionId: state.activeSessionId === id ? null : state.activeSessionId,
           sessions: state.sessions.map((session) =>
-            session.id === id ? { ...session, status: "paused", updatedAt: new Date() } : session
+            session.id === id
+              ? {
+                  ...session,
+                  status: "paused",
+                  actualPracticeSeconds: accumulatedPracticeSeconds(session, now),
+                  activePracticeStartedAt: null,
+                  updatedAt: now,
+                }
+              : session
           ),
         }));
       },
 
       completeSession: (id) => {
-        useHarmoniumStore.getState().setDrone("off");
-        useTablaStore.getState().setPlaying(false);
+        stopPracticeAudio();
+        const now = new Date();
         set((state) => ({
           activeSessionId: state.activeSessionId === id ? null : state.activeSessionId,
           sessions: state.sessions.map((session) =>
-            session.id === id ? { ...session, status: "completed", updatedAt: new Date() } : session
+            session.id === id
+              ? {
+                  ...session,
+                  status: "completed",
+                  actualPracticeSeconds: accumulatedPracticeSeconds(session, now),
+                  activePracticeStartedAt: null,
+                  endedAt: now,
+                  updatedAt: now,
+                }
+              : session
           ),
         }));
       },

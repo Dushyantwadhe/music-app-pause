@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useTablaStore } from "@/store/useTablaStore";
 import { useTablaEngine } from "../hooks/useTablaEngine";
 import { BeatVisualizer } from "./BeatVisualizer";
-import { TaalSelector } from "./TaalSelector";
 import { Slider } from "@/components/ui/Slider";
 import { Button } from "@/components/ui/Button";
-import { Badge, Card, SectionHeader } from "@/components/ui/Card";
-import { getCoreVariantsForTaal, getStylePacksForTaal, THAAT_LIST } from "../data/taals";
+import { Badge, Card } from "@/components/ui/Card";
+import { getCoreVariantsForTaal, getStylePacksForTaal, TAAL_LIST } from "../data/taals";
+import type { TaalName } from "@/types";
 
 export function TablaView() {
   const {
@@ -20,19 +20,22 @@ export function TablaView() {
     patternLayer, setPatternLayer,
     stylePackId, setStylePackId,
     variantId, setVariantId,
-    thaatContext, setThaatContext,
     isCountingIn, countInRemaining,
-    presetSlots, savePresetSlot, loadPresetSlot,
     selectedTaal,
+    setTaal,
   } = useTablaStore();
 
   const { play, pause, stop, taal, activeVariant, activeStylePack } = useTablaEngine();
-  const coreVariants = getCoreVariantsForTaal(selectedTaal);
-  const stylePacks = getStylePacksForTaal(selectedTaal);
-  const selectedPack = stylePacks.find((pack) => pack.id === stylePackId) ?? stylePacks[0] ?? null;
-  const visibleVariants = patternLayer === "style-pack"
-    ? (selectedPack?.variants ?? [])
-    : coreVariants;
+  const coreVariants = useMemo(() => getCoreVariantsForTaal(selectedTaal), [selectedTaal]);
+  const stylePacks = useMemo(() => getStylePacksForTaal(selectedTaal), [selectedTaal]);
+  const selectedPack = useMemo(
+    () => stylePacks.find((pack) => pack.id === stylePackId) ?? stylePacks[0] ?? null,
+    [stylePackId, stylePacks]
+  );
+  const visibleVariants = useMemo(
+    () => patternLayer === "style-pack" ? (selectedPack?.variants ?? []) : coreVariants,
+    [coreVariants, patternLayer, selectedPack]
+  );
 
   useEffect(() => {
     if (patternLayer === "style-pack" && !selectedPack) {
@@ -62,6 +65,11 @@ export function TablaView() {
     variantId,
     visibleVariants,
   ]);
+
+  function handleTaalChange(taalName: TaalName) {
+    stop();
+    setTaal(taalName);
+  }
 
   return (
     <div className="flex w-full flex-col gap-2 p-1.5">
@@ -124,6 +132,46 @@ export function TablaView() {
       </Card>
 
       <Card className="p-3">
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">Choose taal</p>
+            <select
+              value={selectedTaal}
+              onChange={(event) => handleTaalChange(event.target.value)}
+              className="w-full rounded border border-[#d1d5db] bg-white px-2 py-2 text-sm text-[#111827]"
+              aria-label="Choose taal"
+            >
+              {TAAL_LIST.map((taalOption) => (
+                <option key={taalOption.name} value={taalOption.name}>
+                  {taalOption.name} — {taalOption.beats} matras
+                </option>
+              ))}
+            </select>
+            {taal && <p className="mt-1 text-[11px] text-[#6b7280]">{taal.description}</p>}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">Mode</p>
+              <div className="flex flex-wrap gap-1.5">
+                <Button variant={mode === "tabla" ? "primary" : "outline"} size="sm" onClick={() => setMode("tabla")}>Tabla</Button>
+                <Button variant={mode === "metronome" ? "primary" : "outline"} size="sm" onClick={() => setMode("metronome")}>Metronome</Button>
+              </div>
+            </div>
+            <div>
+              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">Count-in</p>
+              <div className="flex flex-wrap gap-1.5">
+                {([0, 2, 4, 8] as const).map((beats) => (
+                  <Button key={beats} variant={countInBeats === beats ? "primary" : "outline"} size="sm" onClick={() => setCountInBeats(beats)}>
+                    {beats === 0 ? "Off" : `${beats} beats`}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <Slider label="BPM" value={bpm} min={40} max={240} onChange={setBpm} formatValue={(v) => `${v} BPM`} />
+          <details className="border-t border-[#e8e1d4] pt-3">
+            <summary className="cursor-pointer text-xs font-medium text-[#6b7280]">Advanced rhythm settings</summary>
+            <div className="mt-3">
         <div className="flex flex-col gap-3">
           <div>
             <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
@@ -201,71 +249,6 @@ export function TablaView() {
             )}
           </div>
 
-          <div>
-            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
-              Thaat Context
-            </p>
-            <select
-              value={thaatContext ?? ""}
-              onChange={(event) => setThaatContext((event.target.value || null) as typeof thaatContext)}
-              className="w-full rounded border border-[#d1d5db] bg-white px-2 py-1 text-xs text-[#111827]"
-            >
-              <option value="">Not set</option>
-              {THAAT_LIST.map((thaat) => (
-                <option key={thaat} value={thaat}>{thaat}</option>
-              ))}
-            </select>
-            <p className="mt-1 text-[11px] text-[#6b7280]">Context only for raga mapping. Does not alter rhythm engine.</p>
-          </div>
-
-          <div>
-            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
-              Mode
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              <Button
-                variant={mode === "tabla" ? "primary" : "outline"}
-                size="sm"
-                onClick={() => setMode("tabla")}
-              >
-                Tabla
-              </Button>
-              <Button
-                variant={mode === "metronome" ? "primary" : "outline"}
-                size="sm"
-                onClick={() => setMode("metronome")}
-              >
-                Metronome
-              </Button>
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
-              Count-in
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {([0, 2, 4, 8] as const).map((beats) => (
-                <Button
-                  key={beats}
-                  variant={countInBeats === beats ? "primary" : "outline"}
-                  size="sm"
-                  onClick={() => setCountInBeats(beats)}
-                >
-                  {beats === 0 ? "Off" : `${beats} Beats`}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <Slider
-            label="BPM"
-            value={bpm}
-            min={40}
-            max={240}
-            onChange={setBpm}
-            formatValue={(v) => `${v} BPM`}
-          />
           <Slider
             label="Pitch"
             value={pitch}
@@ -292,41 +275,11 @@ export function TablaView() {
             </div>
           </div>
 
-          <div>
-            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
-              Preset Slots
-            </p>
-            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
-              {[0, 1, 2].map((slot) => {
-                const preset = presetSlots[slot];
-                return (
-                  <div key={slot} className="rounded border border-[#d1d5db] p-1.5">
-                    <p className="text-[11px] font-semibold text-[#111827]">
-                      {preset?.name || `Preset ${slot + 1}`}
-                    </p>
-                    <p className="mt-0.5 text-[10px] text-[#6b7280]">
-                      {preset ? `${preset.taalName} • ${preset.bpm} BPM` : "Empty slot"}
-                    </p>
-                    <div className="mt-1.5 flex gap-1.5">
-                      <Button size="sm" variant="outline" onClick={() => savePresetSlot(slot as 0 | 1 | 2)}>
-                        Save
-                      </Button>
-                      <Button size="sm" onClick={() => loadPresetSlot(slot as 0 | 1 | 2)} disabled={!preset}>
-                        Load
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
+        </div>
             </div>
-          </div>
+          </details>
         </div>
       </Card>
-
-      <div className="pt-0.5">
-        <SectionHeader title="Select Taal" />
-        <TaalSelector onStop={stop} onAutoPlay={play} />
-      </div>
     </div>
   );
 }

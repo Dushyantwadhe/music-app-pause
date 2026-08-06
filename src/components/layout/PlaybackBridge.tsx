@@ -3,19 +3,17 @@
 import { useEffect } from "react";
 import { useHarmoniumStore } from "@/store/useHarmoniumStore";
 import { useTablaStore } from "@/store/useTablaStore";
+import { useTanpuraStore } from "@/store/useTanpuraStore";
 import { resolveTablaVariant, TAALS } from "@/features/tabla/data/taals";
 import { setMasterVolume, startDrone, stopDrone } from "@/features/harmonium/engine/audioEngine";
 import { startRhythm, stopRhythm, updateBpm } from "@/features/tabla/engine/rhythmEngine";
 
 export function PlaybackBridge() {
   const harmoniumVolume = useHarmoniumStore((state) => state.volume);
-  const harmoniumOctave = useHarmoniumStore((state) => state.octave);
-  const harmoniumTranspose = useHarmoniumStore((state) => state.transpose);
-  const harmoniumDrone = useHarmoniumStore((state) => state.drone);
-  const harmoniumRootNote = useHarmoniumStore((state) => state.rootNote);
-  const harmoniumTuningMode = useHarmoniumStore((state) => state.tuningMode);
-  const harmoniumToneMode = useHarmoniumStore((state) => state.toneMode);
-  const harmoniumBellows = useHarmoniumStore((state) => state.bellowsExpression);
+  const tanpuraMode = useTanpuraStore((state) => state.mode);
+  const tanpuraRootNote = useTanpuraStore((state) => state.rootNote);
+  const tanpuraOctave = useTanpuraStore((state) => state.octave);
+  const tanpuraVolume = useTanpuraStore((state) => state.volume);
 
   const tablaSelectedTaal = useTablaStore((state) => state.selectedTaal);
   const tablaBpm = useTablaStore((state) => state.bpm);
@@ -31,31 +29,27 @@ export function PlaybackBridge() {
   }, [harmoniumVolume]);
 
   useEffect(() => {
-    if (harmoniumDrone === "off") {
+    if (tanpuraMode === "off") {
       stopDrone();
       return;
     }
 
     startDrone(
-      harmoniumDrone,
-      harmoniumOctave,
-      harmoniumVolume,
-      harmoniumTranspose,
-      harmoniumRootNote,
-      harmoniumTuningMode,
-      harmoniumToneMode,
-      harmoniumBellows
+      tanpuraMode,
+      tanpuraOctave,
+      tanpuraVolume,
+      0,
+      tanpuraRootNote,
+      "equal",
+      "warm-reed",
+      0.7
     );
     return () => stopDrone();
   }, [
-    harmoniumBellows,
-    harmoniumDrone,
-    harmoniumOctave,
-    harmoniumRootNote,
-    harmoniumToneMode,
-    harmoniumTranspose,
-    harmoniumTuningMode,
-    harmoniumVolume,
+    tanpuraMode,
+    tanpuraOctave,
+    tanpuraRootNote,
+    tanpuraVolume,
   ]);
 
   useEffect(() => {

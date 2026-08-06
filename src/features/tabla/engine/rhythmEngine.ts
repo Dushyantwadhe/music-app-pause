@@ -190,6 +190,7 @@ const SCHEDULE_AHEAD_S = 0.12;
 let currentBeat  = 0;
 let nextBeatTime = 0;
 let schedulerOpts: SchedulerOptions | null = null;
+const beatUiTimers = new Set<ReturnType<typeof setTimeout>>();
 
 function scheduler() {
   if (!schedulerOpts) return;
@@ -211,7 +212,11 @@ function scheduler() {
     // Schedule UI callback as close to the beat as possible
     const delay = Math.max(0, (nextBeatTime - c.currentTime) * 1000);
     const capturedBeat = beatIdx;
-    setTimeout(() => onBeat(capturedBeat), delay);
+    const uiTimer = setTimeout(() => {
+      beatUiTimers.delete(uiTimer);
+      if (schedulerOpts) onBeat(capturedBeat);
+    }, delay);
+    beatUiTimers.add(uiTimer);
 
     nextBeatTime += beatLen;
     currentBeat++;
@@ -230,6 +235,8 @@ export function startRhythm(opts: SchedulerOptions) {
 
 export function stopRhythm() {
   if (schedulerTimer) { clearTimeout(schedulerTimer); schedulerTimer = null; }
+  beatUiTimers.forEach((timer) => clearTimeout(timer));
+  beatUiTimers.clear();
   schedulerOpts = null;
   currentBeat  = 0;
 }
