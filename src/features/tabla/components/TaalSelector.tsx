@@ -42,13 +42,13 @@ export function TaalSelector({ onStop, onAutoPlay }: TaalSelectorProps) {
               "w-full cursor-pointer rounded border p-3 text-left transition-colors",
               "flex items-center justify-between group cursor-pointer",
               active
-                ? "border-[#93c5fd] bg-[#eff6ff] text-[#1d4ed8]"
-                : "border-[#d1d5db] bg-white text-[#111827] hover:bg-[#f9fafb]"
+                ? "border-[#d9c8ae] bg-[#f3ebdd] text-[#8a5a2b]"
+                : "border-[#e8e1d4] bg-[#fdfbf6] text-[#111827] hover:bg-[#f7f0e2]"
             )}
             aria-pressed={active}
           >
             <div>
-              <p className={cn("text-sm font-semibold", active && "text-[#1d4ed8]")}>
+              <p className={cn("text-sm font-semibold", active && "text-[#8a5a2b]")}>
                 {taal.name}
               </p>
               <p className="mt-0.5 text-xs text-[#6b7280]">{taal.description}</p>
@@ -61,7 +61,7 @@ export function TaalSelector({ onStop, onAutoPlay }: TaalSelectorProps) {
               size="icon"
               onClick={(e) => { e.stopPropagation(); toggleFavorite(taal.name); }}
               aria-label={fav ? "Remove from favorites" : "Add to favorites"}
-              className={cn("text-lg shrink-0", fav ? "text-[#1d4ed8]" : "text-[#6b7280]")}
+              className={cn("text-lg shrink-0", fav ? "text-[#8a5a2b]" : "text-[#6b7280]")}
             >
               {fav ? "★" : "☆"}
             </Button>

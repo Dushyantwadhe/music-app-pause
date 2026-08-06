@@ -7,10 +7,10 @@
 }
 
 :root {
-  --app-bg: #f6f7f9;
+  --app-bg: #f8f5ee;
   --app-fg: #111827;
-  --card-bg: #ffffff;
-  --card-border: #d1d5db;
+  --card-bg: #fdfbf6;
+  --card-border: #e8e1d4;
 }
 
 * {
@@ -29,8 +29,19 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #8a5a2b;
   outline-offset: 2px;
+}
+
+input[type="range"],
+input[type="checkbox"],
+input[type="radio"],
+progress {
+  accent-color: #8a5a2b;
+}
+
+.bg-white {
+  background-color: #fdfbf6 !important;
 }
 
 .piano-white-key {
@@ -44,7 +55,7 @@ body {
 }
 .piano-white-key:active,
 .piano-white-key.active {
-  background: #dbeafe;
+  background: #f3ebdd;
 }
 .piano-black-key {
   background: #111827;
@@ -58,7 +69,7 @@ body {
 }
 .piano-black-key:active,
 .piano-black-key.active {
-  background: #1d4ed8;
+  background: #8a5a2b;
 }
 
 @keyframes beat-pulse {

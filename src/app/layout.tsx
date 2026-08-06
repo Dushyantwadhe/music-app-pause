@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
       <body
-        className="min-h-screen flex flex-col"
+        className="min-h-screen flex flex-col bg-[#F8F5EE]"
         style={{ fontFamily: "var(--font-inter, Inter, sans-serif)" }}
       >
         <PlaybackBridge />

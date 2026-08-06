@@ -61,7 +61,7 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
   if (!hasHydrated) {
     return (
       <div className="flex flex-col gap-4">
-        <Link href="/" className="text-sm text-[#2563eb] hover:underline">
+        <Link href="/" className="text-sm text-[#8a5a2b] hover:underline">
           ← Sessions
         </Link>
         <Card className="text-sm text-[#6b7280]">Loading session...</Card>
@@ -72,7 +72,7 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
   if (!session) {
     return (
       <div className="flex flex-col gap-4">
-        <Link href="/" className="text-sm text-[#2563eb] hover:underline">
+        <Link href="/" className="text-sm text-[#8a5a2b] hover:underline">
           ← Sessions
         </Link>
         <Card className="text-sm text-[#6b7280]">This session no longer exists.</Card>
@@ -117,7 +117,7 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-2">
       <div className="flex items-center justify-between gap-3">
-        <Link href="/" className="text-sm text-[#2563eb] hover:underline">
+        <Link href="/" className="text-sm text-[#8a5a2b] hover:underline">
           ← Sessions
         </Link>
         <div className="flex gap-2">
@@ -180,7 +180,7 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
                     onClick={() => handleOpenTool(item.type)}
                     className={cn(
                       "w-full px-2.5 py-1.5 pr-7 text-left transition-colors",
-                      isFocused ? "bg-[#eff6ff] text-[#1d4ed8]" : "bg-white text-[#111827] hover:bg-[#f9fafb]"
+                      isFocused ? "bg-[#f3ebdd] text-[#8a5a2b]" : "bg-[#fdfbf6] text-[#111827] hover:bg-[#f7f0e2]"
                     )}
                   >
                     <p className="text-sm font-semibold leading-tight">{item.title}</p>

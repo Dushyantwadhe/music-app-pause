@@ -19,15 +19,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           "transition-colors focus-visible:outline-none",
           "disabled:opacity-40 disabled:pointer-events-none",
           variant === "primary" &&
-            "border-[#2563eb] bg-[#2563eb] text-white hover:bg-[#1d4ed8]",
+            "border-[#8A5A2B] bg-[#8A5A2B] text-white hover:bg-[#74471f]",
           variant === "ghost" &&
             "border-transparent bg-transparent text-[#374151] hover:bg-[#f3f4f6]",
           variant === "danger" &&
             "border-[#dc2626] bg-[#dc2626] text-white hover:bg-[#b91c1c]",
           variant === "surface" &&
-            "border-[#d1d5db] bg-white text-[#111827] hover:bg-[#f9fafb]",
+            "border-[#e8e1d4] bg-[#fdfbf6] text-[#111827] hover:bg-[#f7f0e2]",
           variant === "outline" &&
-            "border-[#d1d5db] bg-white text-[#111827] hover:bg-[#f9fafb]",
+            "border-[#e8e1d4] bg-[#fdfbf6] text-[#111827] hover:bg-[#f7f0e2]",
           size === "sm" && "h-8 px-3 text-xs gap-1",
           size === "md" && "h-9 px-4 text-sm gap-1.5",
           size === "lg" && "h-10 px-5 text-base gap-2",
