@@ -4,7 +4,7 @@ import { useHarmoniumStore } from "@/store/useHarmoniumStore";
 import { Slider } from "@/components/ui/Slider";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import type { DroneMode } from "@/types";
+import type { DroneMode, HarmoniumToneMode, HarmoniumTuningMode, RootNote } from "@/types";
 
 export function HarmoniumControls() {
   const {
@@ -13,7 +13,15 @@ export function HarmoniumControls() {
     octave, setOctave,
     transpose, setTranspose,
     drone, setDrone,
+    rootNote, setRootNote,
+    tuningMode, setTuningMode,
+    toneMode, setToneMode,
+    bellowsExpression, setBellowsExpression,
   } = useHarmoniumStore();
+
+  const rootNotes: RootNote[] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const tuningOptions: HarmoniumTuningMode[] = ["equal", "natural"];
+  const toneOptions: HarmoniumToneMode[] = ["basic", "warm-reed"];
 
   const droneOptions: { value: DroneMode; label: string }[] = [
     { value: "off",   label: "Off" },
@@ -59,6 +67,62 @@ export function HarmoniumControls() {
           formatValue={(v) => (v === 0 ? "0" : v > 0 ? `+${v}` : `${v}`)}
         />
       </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#6b7280]">Root Sa</p>
+          <select
+            value={rootNote}
+            onChange={(event) => setRootNote(event.target.value as RootNote)}
+            className="w-full rounded border border-[#d1d5db] bg-white px-2 py-1 text-xs text-[#111827]"
+          >
+            {rootNotes.map((note) => (
+              <option key={note} value={note}>{note}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#6b7280]">Tuning</p>
+          <div className="flex gap-1.5 flex-wrap">
+            {tuningOptions.map((mode) => (
+              <Button
+                key={mode}
+                variant={tuningMode === mode ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setTuningMode(mode)}
+              >
+                {mode === "equal" ? "Equal" : "Natural"}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#6b7280]">Tone</p>
+          <div className="flex gap-1.5 flex-wrap">
+            {toneOptions.map((mode) => (
+              <Button
+                key={mode}
+                variant={toneMode === mode ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setToneMode(mode)}
+              >
+                {mode === "basic" ? "Basic Synth" : "Warm Reed"}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <Slider
+        label="Bellows"
+        value={Math.round(bellowsExpression * 100)}
+        min={0}
+        max={100}
+        onChange={(v) => setBellowsExpression(v / 100)}
+        formatValue={(v) => `${v}%`}
+      />
 
       {/* Drone selector */}
       <div>

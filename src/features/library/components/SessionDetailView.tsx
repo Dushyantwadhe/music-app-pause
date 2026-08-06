@@ -258,6 +258,10 @@ function HarmoniumCardPanel({ sessionId, card, onUpdate }: HarmoniumCardPanelPro
   const octave = useHarmoniumStore((state) => state.octave);
   const transpose = useHarmoniumStore((state) => state.transpose);
   const drone = useHarmoniumStore((state) => state.drone);
+  const rootNote = useHarmoniumStore((state) => state.rootNote);
+  const tuningMode = useHarmoniumStore((state) => state.tuningMode);
+  const toneMode = useHarmoniumStore((state) => state.toneMode);
+  const bellowsExpression = useHarmoniumStore((state) => state.bellowsExpression);
 
   useEffect(() => {
     applyConfig(card.config);
@@ -269,7 +273,11 @@ function HarmoniumCardPanel({ sessionId, card, onUpdate }: HarmoniumCardPanelPro
       card.config.sustain !== sustain ||
       card.config.octave !== octave ||
       card.config.transpose !== transpose ||
-      card.config.drone !== drone;
+      card.config.drone !== drone ||
+      card.config.rootNote !== rootNote ||
+      card.config.tuningMode !== tuningMode ||
+      card.config.toneMode !== toneMode ||
+      card.config.bellowsExpression !== bellowsExpression;
 
     if (!hasChanged) return;
 
@@ -281,17 +289,25 @@ function HarmoniumCardPanel({ sessionId, card, onUpdate }: HarmoniumCardPanelPro
         octave,
         transpose,
         drone,
+        rootNote,
+        tuningMode,
+        toneMode,
+        bellowsExpression,
       },
     } as Partial<HarmoniumSessionCard>);
   }, [
+    bellowsExpression,
     card.config,
     card.id,
     drone,
     octave,
     onUpdate,
+    rootNote,
     sessionId,
     sustain,
+    toneMode,
     transpose,
+    tuningMode,
     volume,
   ]);
 

@@ -12,6 +12,10 @@ export function PlaybackBridge() {
   const harmoniumOctave = useHarmoniumStore((state) => state.octave);
   const harmoniumTranspose = useHarmoniumStore((state) => state.transpose);
   const harmoniumDrone = useHarmoniumStore((state) => state.drone);
+  const harmoniumRootNote = useHarmoniumStore((state) => state.rootNote);
+  const harmoniumTuningMode = useHarmoniumStore((state) => state.tuningMode);
+  const harmoniumToneMode = useHarmoniumStore((state) => state.toneMode);
+  const harmoniumBellows = useHarmoniumStore((state) => state.bellowsExpression);
 
   const tablaSelectedTaal = useTablaStore((state) => state.selectedTaal);
   const tablaBpm = useTablaStore((state) => state.bpm);
@@ -32,9 +36,27 @@ export function PlaybackBridge() {
       return;
     }
 
-    startDrone(harmoniumDrone, harmoniumOctave, harmoniumVolume, harmoniumTranspose);
+    startDrone(
+      harmoniumDrone,
+      harmoniumOctave,
+      harmoniumVolume,
+      harmoniumTranspose,
+      harmoniumRootNote,
+      harmoniumTuningMode,
+      harmoniumToneMode,
+      harmoniumBellows
+    );
     return () => stopDrone();
-  }, [harmoniumDrone, harmoniumOctave, harmoniumTranspose, harmoniumVolume]);
+  }, [
+    harmoniumBellows,
+    harmoniumDrone,
+    harmoniumOctave,
+    harmoniumRootNote,
+    harmoniumToneMode,
+    harmoniumTranspose,
+    harmoniumTuningMode,
+    harmoniumVolume,
+  ]);
 
   useEffect(() => {
     if (!tablaIsPlaying) {

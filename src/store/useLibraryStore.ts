@@ -61,6 +61,10 @@ function createDefaultHarmoniumCard(): HarmoniumSessionCard {
       octave: 4,
       transpose: 0,
       drone: "off",
+      rootNote: "C",
+      tuningMode: "equal",
+      toneMode: "basic",
+      bellowsExpression: 0.7,
       autoEnableDrone: false,
     },
   };
@@ -391,8 +395,10 @@ export const useLibraryStore = create<LibraryState>()(
 
         if (harmoniumCard) {
           useHarmoniumStore.getState().applyConfig(harmoniumCard.config);
-          if (harmoniumCard.config.drone !== "off") {
+          if (harmoniumCard.config.autoEnableDrone && harmoniumCard.config.drone !== "off") {
             useHarmoniumStore.getState().setDrone(harmoniumCard.config.drone);
+          } else {
+            useHarmoniumStore.getState().setDrone("off");
           }
         } else {
           useHarmoniumStore.getState().setDrone("off");

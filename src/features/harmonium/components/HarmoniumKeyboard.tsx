@@ -3,14 +3,15 @@
 import { generateKeys } from "../data/keys";
 import { useHarmoniumStore } from "@/store/useHarmoniumStore";
 import { cn } from "@/lib/cn";
+import { sargamForNote } from "../utils/sargam";
 
 interface KeyboardProps {
-  onNoteOn:  (note: string) => void;
+  onNoteOn:  (note: string, velocity?: number) => void;
   onNoteOff: (note: string) => void;
 }
 
 export function HarmoniumKeyboard({ onNoteOn, onNoteOff }: KeyboardProps) {
-  const { octave, activeNotes } = useHarmoniumStore();
+  const { octave, activeNotes, rootNote } = useHarmoniumStore();
   // Always show 3 octaves centred around the selected octave
   const startOct = Math.max(1, octave - 1);
   const keys  = generateKeys(startOct, 3);
@@ -43,7 +44,7 @@ export function HarmoniumKeyboard({ onNoteOn, onNoteOff }: KeyboardProps) {
     return {
       onPointerDown: (e: React.PointerEvent) => {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-        onNoteOn(note);
+        onNoteOn(note, 1);
       },
       onPointerUp:     () => onNoteOff(note),
       onPointerLeave:  () => onNoteOff(note),
@@ -73,7 +74,7 @@ export function HarmoniumKeyboard({ onNoteOn, onNoteOff }: KeyboardProps) {
                 active && "active"
               )}
               style={{ height: 120 }}
-              aria-label={`${key.label} octave ${key.octave}`}
+              aria-label={`${sargamForNote(key.note, rootNote)} octave ${key.octave}`}
               {...pointerHandlers(key.note)}
             >
               <span
@@ -82,7 +83,7 @@ export function HarmoniumKeyboard({ onNoteOn, onNoteOff }: KeyboardProps) {
                   active ? "text-[#92400e]" : "text-[#64748B]"
                 )}
               >
-                {key.label}
+                {sargamForNote(key.note, rootNote)}
               </span>
             </button>
           );

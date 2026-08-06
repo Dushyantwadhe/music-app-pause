@@ -48,6 +48,10 @@ export interface HarmoniumSessionConfig {
   octave: number;
   transpose: number;
   drone: DroneMode;
+  rootNote: RootNote;
+  tuningMode: HarmoniumTuningMode;
+  toneMode: HarmoniumToneMode;
+  bellowsExpression: number;
   autoEnableDrone: boolean;
 }
 
@@ -191,6 +195,9 @@ export interface HarmoniumKey {
 }
 
 export type DroneMode = "off" | "sa" | "pa" | "sa+pa";
+export type RootNote = "C" | "C#" | "D" | "D#" | "E" | "F" | "F#" | "G" | "G#" | "A" | "A#" | "B";
+export type HarmoniumTuningMode = "equal" | "natural";
+export type HarmoniumToneMode = "basic" | "warm-reed";
 
 // ─── Stats ─────────────────────────────────────────────────────────────────────
 

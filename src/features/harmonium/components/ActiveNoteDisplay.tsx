@@ -1,15 +1,10 @@
 "use client";
 
 import { useHarmoniumStore } from "@/store/useHarmoniumStore";
-
-const NOTE_LABELS: Record<string, string> = {
-  C:"Sa", "C#":"Re♭", D:"Re", "D#":"Ga♭", E:"Ga",
-  F:"Ma", "F#":"Ma#", G:"Pa", "G#":"Dha♭", A:"Dha",
-  "A#":"Ni♭", B:"Ni",
-};
+import { sargamForNote } from "../utils/sargam";
 
 export function ActiveNoteDisplay() {
-  const { activeNotes } = useHarmoniumStore();
+  const { activeNotes, rootNote } = useHarmoniumStore();
 
   const notes = Array.from(activeNotes);
 
@@ -19,8 +14,7 @@ export function ActiveNoteDisplay() {
         <span className="text-xs italic text-[#6b7280]">Play a key...</span>
       ) : (
         notes.map((note) => {
-          const match = note.match(/^([A-G]#?)(\d)$/);
-          const noteName = match ? NOTE_LABELS[match[1]] ?? match[1] : note;
+          const noteName = sargamForNote(note, rootNote);
           return (
             <span
               key={note}

@@ -5,6 +5,8 @@
  * No external audio files needed – runs entirely in the browser.
  */
 
+import type { DroneMode, HarmoniumToneMode, HarmoniumTuningMode, RootNote } from "@/types";
+
 let ctx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 
@@ -19,6 +21,36 @@ interface ActiveVoice {
 const voices = new Map<string, ActiveVoice>();
 let droneVoices: ActiveVoice[] = [];
 
+const NOTE_TO_SEMITONE: Record<RootNote, number> = {
+  C: 0,
+  "C#": 1,
+  D: 2,
+  "D#": 3,
+  E: 4,
+  F: 5,
+  "F#": 6,
+  G: 7,
+  "G#": 8,
+  A: 9,
+  "A#": 10,
+  B: 11,
+};
+
+const JUST_RATIOS = [
+  1,
+  16 / 15,
+  9 / 8,
+  6 / 5,
+  5 / 4,
+  4 / 3,
+  45 / 32,
+  3 / 2,
+  8 / 5,
+  5 / 3,
+  9 / 5,
+  15 / 8,
+];
+
 function getCtx(): AudioContext {
   if (!ctx) {
     ctx = new AudioContext({ latencyHint: "interactive" });
@@ -30,56 +62,79 @@ function getCtx(): AudioContext {
   return ctx;
 }
 
-function noteToFreq(note: string, transpose = 0): number {
+function noteToFreq(
+  note: string,
+  transpose = 0,
+  tuningMode: HarmoniumTuningMode = "equal",
+  rootNote: RootNote = "C"
+): number {
   // e.g. "C4", "F#3"
   const match = note.match(/^([A-G]#?)(\d)$/);
   if (!match) return 261.63;
-  const noteMap: Record<string, number> = {
-    C:0,  "C#":1, D:2,  "D#":3, E:4,  F:5,
-    "F#":6, G:7, "G#":8, A:9, "A#":10, B:11,
-  };
-  const semitones = noteMap[match[1]] ?? 0;
+  const semitones = NOTE_TO_SEMITONE[match[1] as RootNote] ?? 0;
   const octave = parseInt(match[2]);
   const midi = semitones + (octave + 1) * 12 + transpose;
-  return 440 * Math.pow(2, (midi - 69) / 12);
+
+  const equalFreq = 440 * Math.pow(2, (midi - 69) / 12);
+  if (tuningMode === "equal") return equalFreq;
+
+  const rootSemi = NOTE_TO_SEMITONE[rootNote];
+  const rootMidi = (octave + 1) * 12 + rootSemi;
+  const distance = midi - rootMidi;
+  const octaveShift = Math.floor(distance / 12);
+  const degree = ((distance % 12) + 12) % 12;
+  const rootFreq = 440 * Math.pow(2, (rootMidi - 69) / 12) * Math.pow(2, octaveShift);
+  const ratio = JUST_RATIOS[degree] ?? 1;
+  return rootFreq * ratio;
 }
 
 function createHarmoniumVoice(
   frequency: number,
   volume: number,
-  sustain: number
+  sustain: number,
+  toneMode: HarmoniumToneMode,
+  bellowsExpression: number,
+  velocity = 1
 ): ActiveVoice {
   const ctx_ = getCtx();
+  const safeBellows = Math.max(0, Math.min(1, bellowsExpression));
+  const safeVelocity = Math.max(0.2, Math.min(1, velocity));
+
+  const attackTime = 0.015 + (1 - safeBellows) * 0.04;
+  const decayTime = 0.07 + (1 - safeBellows) * 0.08;
+  const brightness = toneMode === "warm-reed"
+    ? 1400 + safeBellows * 1400
+    : 2200 + safeBellows * 2200;
 
   // Low-pass filter for warmth
   const filter = ctx_.createBiquadFilter();
   filter.type = "lowpass";
-  filter.frequency.value = 2200 + frequency * 0.8;
-  filter.Q.value = 0.7;
+  filter.frequency.value = brightness + frequency * (toneMode === "warm-reed" ? 0.45 : 0.8);
+  filter.Q.value = toneMode === "warm-reed" ? 1.0 : 0.7;
 
   const gainNode = ctx_.createGain();
   gainNode.gain.setValueAtTime(0, ctx_.currentTime);
-  // ADSR: Attack 30ms, Decay 80ms, Sustain level, Release via stopNote
-  gainNode.gain.linearRampToValueAtTime(volume * 0.85, ctx_.currentTime + 0.03);
+  // ADSR with bellows-influenced attack and decay.
+  gainNode.gain.linearRampToValueAtTime(volume * safeVelocity * (0.7 + safeBellows * 0.3), ctx_.currentTime + attackTime);
   gainNode.gain.exponentialRampToValueAtTime(
-    Math.max(0.001, volume * sustain),
-    ctx_.currentTime + 0.11
+    Math.max(0.001, volume * safeVelocity * sustain),
+    ctx_.currentTime + attackTime + decayTime
   );
 
-  // Three slightly detuned oscillators for richness
+  // Three oscillator stack with selectable tonal character.
   const osc1 = ctx_.createOscillator();
-  osc1.type = "sawtooth";
+  osc1.type = toneMode === "warm-reed" ? "triangle" : "sawtooth";
   osc1.frequency.value = frequency;
 
   const osc2 = ctx_.createOscillator();
   osc2.type = "sawtooth";
-  osc2.frequency.value = frequency * 1.003; // +3 cents detune
+  osc2.frequency.value = frequency * (toneMode === "warm-reed" ? 1.0015 : 1.003);
 
   const osc3 = ctx_.createOscillator();
-  osc3.type = "square";
+  osc3.type = toneMode === "warm-reed" ? "sine" : "square";
   osc3.frequency.value = frequency * 2;     // one octave up, quiet
   const osc3Gain = ctx_.createGain();
-  osc3Gain.gain.value = 0.08;
+  osc3Gain.gain.value = toneMode === "warm-reed" ? 0.12 : 0.08;
 
   osc1.connect(filter);
   osc2.connect(filter);
@@ -95,10 +150,20 @@ function createHarmoniumVoice(
   return { osc1, osc2, osc3, gainNode, filterNode: filter };
 }
 
-export function playNote(note: string, volume: number, sustain: number, transpose = 0) {
+export function playNote(
+  note: string,
+  volume: number,
+  sustain: number,
+  transpose = 0,
+  rootNote: RootNote = "C",
+  tuningMode: HarmoniumTuningMode = "equal",
+  toneMode: HarmoniumToneMode = "basic",
+  bellowsExpression = 0.7,
+  velocity = 1
+) {
   if (voices.has(note)) return; // already playing
-  const freq = noteToFreq(note, transpose);
-  const voice = createHarmoniumVoice(freq, volume, sustain);
+  const freq = noteToFreq(note, transpose, tuningMode, rootNote);
+  const voice = createHarmoniumVoice(freq, volume, sustain, toneMode, bellowsExpression, velocity);
   voices.set(note, voice);
 }
 
@@ -132,34 +197,49 @@ export function setMasterVolume(v: number) {
 // ── Drone ────────────────────────────────────────────────────────────────────
 
 export function startDrone(
-  mode: "sa" | "pa" | "sa+pa",
+  mode: DroneMode,
   octave: number,
   volume: number,
-  transpose = 0
+  transpose = 0,
+  rootNote: RootNote = "C",
+  tuningMode: HarmoniumTuningMode = "equal",
+  toneMode: HarmoniumToneMode = "basic",
+  bellowsExpression = 0.7
 ) {
   stopDrone();
+  if (mode === "off") return;
+
+  const rootSemi = NOTE_TO_SEMITONE[rootNote];
+  const paSemi = (rootSemi + 7) % 12;
+  const noteNames = Object.entries(NOTE_TO_SEMITONE).reduce<Record<number, RootNote>>((acc, [name, value]) => {
+    acc[value] = name as RootNote;
+    return acc;
+  }, {});
+
   const dronePairs: string[] = [];
-  if (mode === "sa" || mode === "sa+pa") dronePairs.push(`C${octave}`);
-  if (mode === "pa" || mode === "sa+pa") dronePairs.push(`G${octave}`);
+  if (mode === "sa" || mode === "sa+pa") dronePairs.push(`${noteNames[rootSemi]}${octave}`);
+  if (mode === "pa" || mode === "sa+pa") dronePairs.push(`${noteNames[paSemi]}${octave}`);
+
+  const safeBellows = Math.max(0, Math.min(1, bellowsExpression));
 
   droneVoices = dronePairs.map((note) => {
-    const freq = noteToFreq(note, transpose);
+    const freq = noteToFreq(note, transpose, tuningMode, rootNote);
     const ctx_ = getCtx();
     const filter = ctx_.createBiquadFilter();
     filter.type = "lowpass";
-    filter.frequency.value = 1200;
+    filter.frequency.value = toneMode === "warm-reed" ? 900 + safeBellows * 700 : 1200 + safeBellows * 700;
 
     const gainNode = ctx_.createGain();
     gainNode.gain.setValueAtTime(0, ctx_.currentTime);
-    gainNode.gain.linearRampToValueAtTime(volume * 0.4, ctx_.currentTime + 0.8);
+    gainNode.gain.linearRampToValueAtTime(volume * (0.28 + safeBellows * 0.2), ctx_.currentTime + 0.8);
 
     const osc1 = ctx_.createOscillator();
-    osc1.type = "sawtooth";
+    osc1.type = toneMode === "warm-reed" ? "triangle" : "sawtooth";
     osc1.frequency.value = freq;
 
     const osc2 = ctx_.createOscillator();
     osc2.type = "sawtooth";
-    osc2.frequency.value = freq * 0.998;
+    osc2.frequency.value = freq * (toneMode === "warm-reed" ? 0.999 : 0.998);
 
     const osc3 = ctx_.createOscillator();
     osc3.type = "sine";

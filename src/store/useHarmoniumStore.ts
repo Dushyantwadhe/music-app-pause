@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { DroneMode, HarmoniumSessionConfig } from "@/types";
+import type { DroneMode, HarmoniumSessionConfig, HarmoniumToneMode, HarmoniumTuningMode, RootNote } from "@/types";
 
 interface HarmoniumState {
   volume: number;
@@ -8,6 +8,10 @@ interface HarmoniumState {
   octave: number;
   transpose: number;
   drone: DroneMode;
+  rootNote: RootNote;
+  tuningMode: HarmoniumTuningMode;
+  toneMode: HarmoniumToneMode;
+  bellowsExpression: number;
   activeNotes: Set<string>;
   isRecording: boolean;
   recordedNotes: Array<{ note: string; time: number; duration: number }>;
@@ -18,6 +22,10 @@ interface HarmoniumState {
   setOctave: (v: number) => void;
   setTranspose: (v: number) => void;
   setDrone: (d: DroneMode) => void;
+  setRootNote: (note: RootNote) => void;
+  setTuningMode: (mode: HarmoniumTuningMode) => void;
+  setToneMode: (mode: HarmoniumToneMode) => void;
+  setBellowsExpression: (value: number) => void;
   applyConfig: (config: HarmoniumSessionConfig) => void;
   addActiveNote: (note: string) => void;
   removeActiveNote: (note: string) => void;
@@ -35,6 +43,10 @@ export const useHarmoniumStore = create<HarmoniumState>()(
       octave: 4,
       transpose: 0,
       drone: "off",
+      rootNote: "C",
+      tuningMode: "equal",
+      toneMode: "basic",
+      bellowsExpression: 0.7,
       activeNotes: new Set(),
       isRecording: false,
       recordedNotes: [],
@@ -45,12 +57,20 @@ export const useHarmoniumStore = create<HarmoniumState>()(
       setOctave: (v) => set({ octave: v }),
       setTranspose: (v) => set({ transpose: v }),
       setDrone: (d) => set({ drone: d }),
+      setRootNote: (note) => set({ rootNote: note }),
+      setTuningMode: (mode) => set({ tuningMode: mode }),
+      setToneMode: (mode) => set({ toneMode: mode }),
+      setBellowsExpression: (value) => set({ bellowsExpression: Math.max(0, Math.min(1, value)) }),
       applyConfig: (config) =>
         set({
           volume: config.volume,
           sustain: config.sustain,
           octave: config.octave,
           transpose: config.transpose,
+          rootNote: config.rootNote ?? "C",
+          tuningMode: config.tuningMode ?? "equal",
+          toneMode: config.toneMode ?? "basic",
+          bellowsExpression: config.bellowsExpression ?? 0.7,
           drone: config.autoEnableDrone ? config.drone : "off",
         }),
 
@@ -83,6 +103,10 @@ export const useHarmoniumStore = create<HarmoniumState>()(
         octave: s.octave,
         transpose: s.transpose,
         drone: s.drone,
+        rootNote: s.rootNote,
+        tuningMode: s.tuningMode,
+        toneMode: s.toneMode,
+        bellowsExpression: s.bellowsExpression,
       }),
     }
   )
