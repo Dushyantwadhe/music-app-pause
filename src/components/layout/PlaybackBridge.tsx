@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useHarmoniumStore } from "@/store/useHarmoniumStore";
 import { useTablaStore } from "@/store/useTablaStore";
-import { TAALS } from "@/features/tabla/data/taals";
+import { resolveTablaVariant, TAALS } from "@/features/tabla/data/taals";
 import { setMasterVolume, startDrone, stopDrone } from "@/features/harmonium/engine/audioEngine";
 import { startRhythm, stopRhythm, updateBpm } from "@/features/tabla/engine/rhythmEngine";
 
@@ -18,6 +18,9 @@ export function PlaybackBridge() {
   const tablaPitch = useTablaStore((state) => state.pitch);
   const tablaIsPlaying = useTablaStore((state) => state.isPlaying);
   const tablaIsMetronomeMode = useTablaStore((state) => state.isMetronomeMode);
+  const tablaPatternLayer = useTablaStore((state) => state.patternLayer);
+  const tablaStylePackId = useTablaStore((state) => state.stylePackId);
+  const tablaVariantId = useTablaStore((state) => state.variantId);
 
   useEffect(() => {
     setMasterVolume(harmoniumVolume);
@@ -43,8 +46,19 @@ export function PlaybackBridge() {
     const taal = TAALS[tablaSelectedTaal];
     if (!taal) return;
 
+    const resolved = resolveTablaVariant(
+      tablaSelectedTaal,
+      tablaPatternLayer,
+      tablaVariantId,
+      tablaStylePackId
+    );
+
+    const activePattern = resolved.variant?.pattern?.length
+      ? resolved.variant.pattern
+      : taal.pattern;
+
     startRhythm({
-      pattern: taal.pattern.map((beat) => ({
+      pattern: activePattern.map((beat) => ({
         syllable: beat.syllable,
         isKhali: beat.isKhali,
       })),
@@ -56,7 +70,16 @@ export function PlaybackBridge() {
     });
 
     return () => stopRhythm();
-  }, [tablaBpm, tablaIsMetronomeMode, tablaIsPlaying, tablaPitch, tablaSelectedTaal]);
+  }, [
+    tablaBpm,
+    tablaIsMetronomeMode,
+    tablaIsPlaying,
+    tablaPatternLayer,
+    tablaPitch,
+    tablaSelectedTaal,
+    tablaStylePackId,
+    tablaVariantId,
+  ]);
 
   useEffect(() => {
     if (tablaIsPlaying) {

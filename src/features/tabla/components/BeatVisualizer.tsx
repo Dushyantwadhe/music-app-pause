@@ -1,20 +1,23 @@
 "use client";
 
 import { useTablaStore } from "@/store/useTablaStore";
-import { TAALS } from "../data/taals";
+import { resolveTablaVariant, TAALS } from "../data/taals";
 import { cn } from "@/lib/cn";
 
 export function BeatVisualizer() {
-  const { currentBeat, isPlaying, selectedTaal } = useTablaStore();
+  const { currentBeat, isPlaying, selectedTaal, patternLayer, stylePackId, variantId } = useTablaStore();
   const taal = TAALS[selectedTaal];
   if (!taal) return null;
+
+  const resolved = resolveTablaVariant(selectedTaal, patternLayer, variantId, stylePackId);
+  const activePattern = resolved.variant?.pattern?.length ? resolved.variant.pattern : taal.pattern;
 
   // Group beats by vibhag and compute Sam / Tali / Khali markers
   let beatOffset = 0;
   let taliCount  = 1; // Tali starts at 2 (Sam = X, then Tali 2, 3…)
 
   const vibhags = taal.vibhags.map((count, vi) => {
-    const beats   = taal.pattern.slice(beatOffset, beatOffset + count);
+    const beats   = activePattern.slice(beatOffset, beatOffset + count);
     beatOffset   += count;
     const isSam   = beats[0]?.isSam ?? false;
     const isKhali = beats[0]?.isKhali ?? false;

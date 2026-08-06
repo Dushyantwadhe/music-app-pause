@@ -141,6 +141,10 @@ function _makeNoiseSrc(c: AudioContext, durationS: number): AudioBufferSourceNod
 }
 
 export function playSyllable(syllable: string, time: number, volume: number, pitch: number) {
+  if (syllable === "-" || syllable.toLowerCase() === "rest") {
+    return;
+  }
+
   switch (syllable.toLowerCase()) {
     case "dha":  return playDha(time, volume, pitch);
     case "dhin": return playDhin(time, volume, pitch);

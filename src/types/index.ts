@@ -56,8 +56,29 @@ export interface TablaSessionConfig {
   bpm: number;
   pitch: number;
   isLooping: boolean;
+  mode: "tabla" | "metronome";
+  countInBeats: 0 | 2 | 4 | 8;
+  patternLayer: "core" | "style-pack";
+  stylePackId: string | null;
+  variantId: string;
+  thaatContext: ThaatName | null;
+  presetSlots: [TablaPresetSlot | null, TablaPresetSlot | null, TablaPresetSlot | null];
   isMetronomeMode: boolean;
   autoPlay: boolean;
+}
+
+export interface TablaPresetSlot {
+  name: string;
+  taalName: TaalName;
+  bpm: number;
+  pitch: number;
+  isLooping: boolean;
+  mode: "tabla" | "metronome";
+  countInBeats: 0 | 2 | 4 | 8;
+  patternLayer: "core" | "style-pack";
+  stylePackId: string | null;
+  variantId: string;
+  thaatContext: ThaatName | null;
 }
 
 export interface SessionCardBase {
@@ -110,12 +131,19 @@ export interface Favorite {
 
 // ─── Taal / Rhythm ─────────────────────────────────────────────────────────────
 
-export type TaalName =
-  | "Teentaal"
-  | "Dadra"
-  | "Keharwa"
-  | "Rupak"
-  | "Ektaal";
+export type TaalName = string;
+
+export type ThaatName =
+  | "Bilawal"
+  | "Khamaj"
+  | "Kafi"
+  | "Asavari"
+  | "Bhairav"
+  | "Bhairavi"
+  | "Todi"
+  | "Marwa"
+  | "Poorvi"
+  | "Kalyan";
 
 export interface Beat {
   index: number;           // beat position within cycle
@@ -132,6 +160,24 @@ export interface Taal {
   vibhags: number[];       // beat counts per vibhag e.g. [4,4,4] for Teentaal
   pattern: Beat[];
   description: string;
+}
+
+export interface TaalPatternVariant {
+  id: string;
+  name: string;
+  level: "basic" | "medium" | "advanced";
+  kind: "theka" | "fill" | "rela" | "kaida";
+  description: string;
+  pattern: Beat[];
+}
+
+export interface TaalStylePack {
+  id: string;
+  name: string;
+  description: string;
+  taalName: TaalName;
+  source: "gharana" | "genre" | "speed";
+  variants: TaalPatternVariant[];
 }
 
 // ─── Harmonium ─────────────────────────────────────────────────────────────────

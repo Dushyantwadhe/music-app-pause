@@ -8,14 +8,16 @@ import type { TaalName } from "@/types";
 
 interface TaalSelectorProps {
   onStop: () => void;
+  onAutoPlay: () => void;
 }
 
-export function TaalSelector({ onStop }: TaalSelectorProps) {
+export function TaalSelector({ onStop, onAutoPlay }: TaalSelectorProps) {
   const { selectedTaal, setTaal, favoriteTaals, toggleFavorite } = useTablaStore();
 
   function handleSelect(name: TaalName) {
     onStop();
     setTaal(name);
+    onAutoPlay();
   }
 
   return (
@@ -50,6 +52,9 @@ export function TaalSelector({ onStop }: TaalSelectorProps) {
                 {taal.name}
               </p>
               <p className="mt-0.5 text-xs text-[#6b7280]">{taal.description}</p>
+              <p className="mt-0.5 text-[11px] text-[#6b7280]">
+                {taal.beats} matras • {taal.vibhags.join("+")} vibhag split
+              </p>
             </div>
             <Button
               variant="ghost"

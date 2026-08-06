@@ -60,8 +60,8 @@ function createDefaultHarmoniumCard(): HarmoniumSessionCard {
       sustain: 0.6,
       octave: 4,
       transpose: 0,
-      drone: "sa",
-      autoEnableDrone: true,
+      drone: "off",
+      autoEnableDrone: false,
     },
   };
 }
@@ -78,8 +78,15 @@ function createDefaultTablaCard(): TablaSessionCard {
       bpm: 80,
       pitch: 0,
       isLooping: true,
+      mode: "tabla",
+      countInBeats: 0,
+      patternLayer: "core",
+      stylePackId: null,
+      variantId: "core-teentaal-basic",
+      thaatContext: null,
+      presetSlots: [null, null, null],
       isMetronomeMode: false,
-      autoPlay: true,
+      autoPlay: false,
     },
   };
 }
@@ -384,12 +391,16 @@ export const useLibraryStore = create<LibraryState>()(
 
         if (harmoniumCard) {
           useHarmoniumStore.getState().applyConfig(harmoniumCard.config);
+          if (harmoniumCard.config.drone !== "off") {
+            useHarmoniumStore.getState().setDrone(harmoniumCard.config.drone);
+          }
         } else {
           useHarmoniumStore.getState().setDrone("off");
         }
 
         if (tablaCard) {
           useTablaStore.getState().applyConfig(tablaCard.config);
+          useTablaStore.getState().setPlaying(true);
         } else {
           useTablaStore.getState().reset();
         }

@@ -89,6 +89,22 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
   function handleOpenTool(type: PracticeSessionCard["type"]) {
     const existing = cardByType.get(type);
     if (existing) {
+      if (existing.type === "harmonium" && existing.config.autoEnableDrone) {
+        updateSessionCard(currentSession.id, existing.id, {
+          config: {
+            ...existing.config,
+            autoEnableDrone: false,
+          },
+        } as Partial<HarmoniumSessionCard>);
+      }
+      if (existing.type === "tabla" && existing.config.autoPlay) {
+        updateSessionCard(currentSession.id, existing.id, {
+          config: {
+            ...existing.config,
+            autoPlay: false,
+          },
+        } as Partial<TablaSessionCard>);
+      }
       focusCard(existing.id);
       if (!existing.enabled) {
         updateSessionCard(currentSession.id, existing.id, { enabled: true });
@@ -99,7 +115,7 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-2.5">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-2">
       <div className="flex items-center justify-between gap-3">
         <Link href="/" className="text-sm text-[#2563eb] hover:underline">
           ← Sessions
@@ -110,32 +126,32 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
         </div>
       </div>
 
-      <Card className="p-2.5">
-        <div className="grid gap-2.5 md:grid-cols-[minmax(0,1fr)_240px] md:items-start">
+      <Card className="p-2">
+        <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_220px] md:items-start">
           <div className="min-w-0">
             <div className="flex items-start justify-between gap-2">
               <input
                 type="text"
                 value={currentSession.name}
                 onChange={(event) => updateSession(currentSession.id, { name: event.target.value, status: "draft" })}
-                className="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-lg font-semibold text-[#111827] focus:border-[#d1d5db] focus:outline-none"
+                className="w-full rounded border border-transparent bg-transparent px-1 py-0.5 text-base font-semibold text-[#111827] focus:border-[#d1d5db] focus:outline-none"
               />
               <Badge variant={currentSession.status === "playing" ? "primary" : currentSession.isTemplate ? "success" : "muted"}>
                 {currentSession.status}
               </Badge>
             </div>
 
-            <p className="mt-0.5 text-xs text-[#6b7280]">Session name visible at top while building and playing.</p>
+            <p className="mt-0.5 text-[11px] text-[#6b7280]">Session name visible at top while building and playing.</p>
 
             <textarea
               value={currentSession.description}
               onChange={(event) => updateSession(currentSession.id, { description: event.target.value, status: "draft" })}
               placeholder="Optional short description for this session"
-              className="mt-1.5 min-h-12 w-full resize-none rounded border border-[#d1d5db] bg-white px-2.5 py-1.5 text-sm text-[#111827] placeholder:text-[#9ca3af] focus:outline-none"
+              className="mt-1 min-h-11 w-full resize-none rounded border border-[#d1d5db] bg-white px-2 py-1.5 text-xs text-[#111827] placeholder:text-[#9ca3af] focus:outline-none"
             />
           </div>
 
-          <div className="grid gap-1.5 text-xs text-[#6b7280]">
+          <div className="grid gap-1 text-[11px] text-[#6b7280]">
             <div className="rounded border border-[#d1d5db] p-1.5">
               <p>Attached items</p>
               <p className="mt-0.5 text-sm font-semibold text-[#111827]">{attachedCards.length}</p>
@@ -148,10 +164,10 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
         </div>
       </Card>
 
-      <section className="grid gap-2 md:grid-cols-[210px_minmax(0,1fr)] md:items-start">
+      <section className="grid gap-2 md:grid-cols-[200px_minmax(0,1fr)] md:items-start">
         <Card className="overflow-hidden p-0">
-          <div className="px-3 py-1.5">
-            <h2 className="text-sm font-semibold text-[#111827]">Tools</h2>
+          <div className="px-2.5 py-1.5">
+            <h2 className="text-xs font-semibold text-[#111827]">Tools</h2>
           </div>
           <div className="flex flex-col border-t border-[#d1d5db]">
             {AVAILABLE_CARDS.map((item) => {
@@ -163,12 +179,12 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
                     type="button"
                     onClick={() => handleOpenTool(item.type)}
                     className={cn(
-                      "w-full px-2.5 py-2 pr-8 text-left transition-colors",
+                      "w-full px-2.5 py-1.5 pr-7 text-left transition-colors",
                       isFocused ? "bg-[#eff6ff] text-[#1d4ed8]" : "bg-white text-[#111827] hover:bg-[#f9fafb]"
                     )}
                   >
                     <p className="text-sm font-semibold leading-tight">{item.title}</p>
-                    <p className="mt-0.5 text-xs text-[#6b7280]">{card?.title || item.subtitle}</p>
+                    <p className="mt-0.5 text-[11px] text-[#6b7280]">{card?.title || item.subtitle}</p>
                   </button>
 
                   {card ? (
@@ -176,12 +192,12 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
                       type="button"
                       aria-label={`Remove ${item.title} card`}
                       onClick={() => removeSessionCard(currentSession.id, card.id)}
-                      className="absolute right-1.5 top-1.5 h-5 w-5 rounded border border-[#d1d5db] text-[#6b7280] hover:bg-[#f3f4f6]"
+                      className="absolute right-1.5 top-1.5 h-4.5 w-4.5 rounded border border-[#d1d5db] text-[#6b7280] hover:bg-[#f3f4f6]"
                     >
                       x
                     </button>
                   ) : (
-                    <span className="absolute right-2.5 top-1.5 text-lg leading-none text-[#111827]">+</span>
+                    <span className="absolute right-2.5 top-1 text-base leading-none text-[#111827]">+</span>
                   )}
                 </div>
               );
@@ -189,10 +205,10 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
           </div>
         </Card>
 
-        <Card className="flex flex-col gap-2.5 p-2.5">
+        <Card className="flex flex-col gap-2 p-2">
           <div>
-            <h2 className="text-base font-semibold text-[#111827]">Tool Editor</h2>
-            <p className="mt-0.5 text-xs text-[#6b7280]">Select a tool from the left to configure and record it.</p>
+            <h2 className="text-sm font-semibold text-[#111827]">Tool Editor</h2>
+            <p className="mt-0.5 text-[11px] text-[#6b7280]">Select a tool from the left to configure and record it.</p>
           </div>
 
           {focusedCard ? (
@@ -210,35 +226,15 @@ export function SessionDetailView({ sessionId }: SessionDetailViewProps) {
               />
             )
           ) : (
-            <div className="rounded border border-[#d1d5db] bg-white px-3 py-3 text-sm text-[#6b7280]">
+            <div className="rounded border border-[#d1d5db] bg-white px-3 py-2.5 text-sm text-[#6b7280]">
               Add a tool from the left rail to start building this session.
             </div>
           )}
 
-          {focusedCard && (
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => moveSessionCard(currentSession.id, focusedCard.id, "up")}
-                disabled={focusedCard.order === 0}
-              >
-                Move Up
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => moveSessionCard(currentSession.id, focusedCard.id, "down")}
-                disabled={focusedCard.order === attachedCards.length - 1}
-              >
-                Move Down
-              </Button>
-            </div>
-          )}
         </Card>
       </section>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 pt-0.5">
         <Button variant="ghost" onClick={() => router.push("/")}>Back to Home</Button>
         <div className="flex flex-wrap items-center gap-1.5">
         <Button variant="surface" onClick={() => updateSession(currentSession.id, { status: "saved" })}>Save Session</Button>
@@ -300,26 +296,17 @@ function HarmoniumCardPanel({ sessionId, card, onUpdate }: HarmoniumCardPanelPro
   ]);
 
   return (
-    <Card className="flex flex-col gap-3 p-3">
+    <Card className="flex flex-col gap-2 p-2">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.12em] text-[#6b7280]">Harmonium</p>
+          <p className="text-[11px] uppercase tracking-[0.1em] text-[#6b7280]">Harmonium</p>
           <input
             type="text"
             value={card.title}
             onChange={(event) => onUpdate(sessionId, card.id, { title: event.target.value })}
-            className="mt-1 w-full rounded border border-[#d1d5db] bg-white px-3 py-1.5 text-lg font-semibold text-[#111827] focus:outline-none"
+            className="mt-0.5 w-full rounded border border-[#d1d5db] bg-white px-2 py-1 text-sm font-semibold text-[#111827] focus:outline-none"
           />
         </div>
-        <label className="flex items-center gap-2 text-xs text-[#4b5563]">
-          <input
-            type="checkbox"
-            checked={card.enabled}
-            onChange={(event) => onUpdate(sessionId, card.id, { enabled: event.target.checked })}
-            className="h-4 w-4"
-          />
-          Enabled
-        </label>
       </div>
 
       <div className="rounded border border-[#d1d5db] bg-white">
@@ -341,8 +328,13 @@ function TablaCardPanel({ sessionId, card, onUpdate }: TablaCardPanelProps) {
   const bpm = useTablaStore((state) => state.bpm);
   const pitch = useTablaStore((state) => state.pitch);
   const isLooping = useTablaStore((state) => state.isLooping);
-  const isMetronomeMode = useTablaStore((state) => state.isMetronomeMode);
-  const isPlaying = useTablaStore((state) => state.isPlaying);
+  const mode = useTablaStore((state) => state.mode);
+  const countInBeats = useTablaStore((state) => state.countInBeats);
+  const patternLayer = useTablaStore((state) => state.patternLayer);
+  const stylePackId = useTablaStore((state) => state.stylePackId);
+  const variantId = useTablaStore((state) => state.variantId);
+  const thaatContext = useTablaStore((state) => state.thaatContext);
+  const presetSlots = useTablaStore((state) => state.presetSlots);
 
   useEffect(() => {
     applyConfig(card.config);
@@ -354,8 +346,14 @@ function TablaCardPanel({ sessionId, card, onUpdate }: TablaCardPanelProps) {
       card.config.bpm !== bpm ||
       card.config.pitch !== pitch ||
       card.config.isLooping !== isLooping ||
-      card.config.isMetronomeMode !== isMetronomeMode ||
-      card.config.autoPlay !== isPlaying;
+      card.config.mode !== mode ||
+      card.config.countInBeats !== countInBeats ||
+      card.config.patternLayer !== patternLayer ||
+      card.config.stylePackId !== stylePackId ||
+      card.config.variantId !== variantId ||
+      card.config.thaatContext !== thaatContext ||
+      JSON.stringify(card.config.presetSlots ?? [null, null, null]) !== JSON.stringify(presetSlots) ||
+      card.config.isMetronomeMode !== (mode === "metronome");
 
     if (!hasChanged) return;
 
@@ -366,44 +364,47 @@ function TablaCardPanel({ sessionId, card, onUpdate }: TablaCardPanelProps) {
         bpm,
         pitch,
         isLooping,
-        isMetronomeMode,
-        autoPlay: isPlaying,
+        mode,
+        countInBeats,
+        patternLayer,
+        stylePackId,
+        variantId,
+        thaatContext,
+        presetSlots,
+        isMetronomeMode: mode === "metronome",
+        autoPlay: false,
       },
     } as Partial<TablaSessionCard>);
   }, [
     bpm,
     card.config,
+    countInBeats,
     card.id,
     isLooping,
-    isMetronomeMode,
-    isPlaying,
+    mode,
     onUpdate,
+    patternLayer,
     pitch,
+    presetSlots,
     selectedTaal,
     sessionId,
+    stylePackId,
+    thaatContext,
+    variantId,
   ]);
 
   return (
-    <Card className="flex flex-col gap-3 p-3">
+    <Card className="flex flex-col gap-2 p-2">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.12em] text-[#6b7280]">Tabla</p>
+          <p className="text-[11px] uppercase tracking-[0.1em] text-[#6b7280]">Tabla</p>
           <input
             type="text"
             value={card.title}
             onChange={(event) => onUpdate(sessionId, card.id, { title: event.target.value })}
-            className="mt-1 w-full rounded border border-[#d1d5db] bg-white px-3 py-1.5 text-lg font-semibold text-[#111827] focus:outline-none"
+            className="mt-0.5 w-full rounded border border-[#d1d5db] bg-white px-2 py-1 text-sm font-semibold text-[#111827] focus:outline-none"
           />
         </div>
-        <label className="flex items-center gap-2 text-xs text-[#4b5563]">
-          <input
-            type="checkbox"
-            checked={card.enabled}
-            onChange={(event) => onUpdate(sessionId, card.id, { enabled: event.target.checked })}
-            className="h-4 w-4"
-          />
-          Enabled
-        </label>
       </div>
 
       <div className="rounded border border-[#d1d5db] bg-white">
