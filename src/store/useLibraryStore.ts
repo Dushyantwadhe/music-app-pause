@@ -1,54 +1,463 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Recording, PracticeSession } from "@/types";
+import { useHarmoniumStore } from "@/store/useHarmoniumStore";
+import { useTablaStore } from "@/store/useTablaStore";
+import type {
+  HarmoniumSessionCard,
+  PracticeSession,
+  PracticeSessionCard,
+  Recording,
+  SessionStatus,
+  TablaSessionCard,
+} from "@/types";
+
+type LibraryFilterMode = "all" | "favorites" | "recent";
 
 interface LibraryState {
+  hasHydrated: boolean;
   recordings: Recording[];
   sessions: PracticeSession[];
+  selectedSessionId: string | null;
+  activeSessionId: string | null;
+  focusedCardId: string | null;
   searchQuery: string;
-  filterMode: "all" | "favorites" | "recent";
+  filterMode: LibraryFilterMode;
   playingId: string | null;
 
-  addRecording: (r: Recording) => void;
+  addRecording: (recording: Recording) => void;
   updateRecording: (id: string, patch: Partial<Recording>) => void;
   deleteRecording: (id: string) => void;
   toggleFavorite: (id: string) => void;
-  addSession: (s: PracticeSession) => void;
-  setSearchQuery: (q: string) => void;
-  setFilterMode: (m: "all" | "favorites" | "recent") => void;
+
+  createSession: () => string;
+  duplicateSession: (id: string) => void;
+  deleteSession: (id: string) => void;
+  selectSession: (id: string | null) => void;
+  focusCard: (cardId: string | null) => void;
+  updateSession: (id: string, patch: Partial<PracticeSession>) => void;
+  addSessionCard: (sessionId: string, type: PracticeSessionCard["type"]) => void;
+  removeSessionCard: (sessionId: string, cardId: string) => void;
+  updateSessionCard: (sessionId: string, cardId: string, patch: Partial<PracticeSessionCard>) => void;
+  moveSessionCard: (sessionId: string, cardId: string, direction: "up" | "down") => void;
+  playSession: (id: string) => void;
+  pauseSession: (id: string) => void;
+  completeSession: (id: string) => void;
+
+  setSearchQuery: (query: string) => void;
+  setFilterMode: (mode: LibraryFilterMode) => void;
   setPlayingId: (id: string | null) => void;
+}
+
+function createDefaultHarmoniumCard(): HarmoniumSessionCard {
+  return {
+    id: crypto.randomUUID(),
+    type: "harmonium",
+    title: "Harmonium Setup",
+    enabled: true,
+    order: 0,
+    config: {
+      volume: 0.8,
+      sustain: 0.6,
+      octave: 4,
+      transpose: 0,
+      drone: "sa",
+      autoEnableDrone: true,
+    },
+  };
+}
+
+function createDefaultTablaCard(): TablaSessionCard {
+  return {
+    id: crypto.randomUUID(),
+    type: "tabla",
+    title: "Tabla Groove",
+    enabled: true,
+    order: 1,
+    config: {
+      taalName: "Teentaal",
+      bpm: 80,
+      pitch: 0,
+      isLooping: true,
+      isMetronomeMode: false,
+      autoPlay: true,
+    },
+  };
+}
+
+function createDefaultSession(): PracticeSession {
+  const now = new Date();
+
+  return {
+    id: crypto.randomUUID(),
+    uid: "",
+    name: "New Session",
+    description: "",
+    status: "draft",
+    cards: [],
+    lastPlayedAt: null,
+    startedAt: now,
+    endedAt: now,
+    durationMinutes: 20,
+    instrument: "mixed",
+    notes: "",
+    isTemplate: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+function normalizeCardOrder(cards: PracticeSessionCard[]) {
+  return cards.map((card, index) => ({ ...card, order: index }));
+}
+
+function draftStatus(current: SessionStatus): SessionStatus {
+  return current === "playing" ? "playing" : "draft";
+}
+
+function createSessionCard(type: PracticeSessionCard["type"], order: number): PracticeSessionCard {
+  const card = type === "harmonium" ? createDefaultHarmoniumCard() : createDefaultTablaCard();
+  return {
+    ...card,
+    order,
+  };
 }
 
 export const useLibraryStore = create<LibraryState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
+      hasHydrated: false,
       recordings: [],
       sessions: [],
+      selectedSessionId: null,
+      activeSessionId: null,
+      focusedCardId: null,
       searchQuery: "",
       filterMode: "all",
       playingId: null,
 
-      addRecording: (r) => set((s) => ({ recordings: [r, ...s.recordings] })),
+      addRecording: (recording) =>
+        set((state) => ({ recordings: [recording, ...state.recordings] })),
       updateRecording: (id, patch) =>
-        set((s) => ({
-          recordings: s.recordings.map((r) => (r.id === id ? { ...r, ...patch } : r)),
-        })),
-      deleteRecording: (id) =>
-        set((s) => ({ recordings: s.recordings.filter((r) => r.id !== id) })),
-      toggleFavorite: (id) =>
-        set((s) => ({
-          recordings: s.recordings.map((r) =>
-            r.id === id ? { ...r, isFavorite: !r.isFavorite } : r
+        set((state) => ({
+          recordings: state.recordings.map((recording) =>
+            recording.id === id ? { ...recording, ...patch } : recording
           ),
         })),
-      addSession: (s) => set((st) => ({ sessions: [s, ...st.sessions] })),
-      setSearchQuery: (q) => set({ searchQuery: q }),
-      setFilterMode: (m) => set({ filterMode: m }),
+      deleteRecording: (id) =>
+        set((state) => ({ recordings: state.recordings.filter((recording) => recording.id !== id) })),
+      toggleFavorite: (id) =>
+        set((state) => ({
+          recordings: state.recordings.map((recording) =>
+            recording.id === id
+              ? { ...recording, isFavorite: !recording.isFavorite }
+              : recording
+          ),
+        })),
+
+      createSession: () => {
+        const session = createDefaultSession();
+        set((state) => ({
+          sessions: [session, ...state.sessions],
+          selectedSessionId: session.id,
+          focusedCardId: null,
+        }));
+        return session.id;
+      },
+
+      duplicateSession: (id) =>
+        set((state) => {
+          const source = state.sessions.find((session) => session.id === id);
+          if (!source) return state;
+
+          const now = new Date();
+          const copy: PracticeSession = {
+            ...source,
+            id: crypto.randomUUID(),
+            name: `${source.name} Copy`,
+            status: "draft",
+            lastPlayedAt: null,
+            createdAt: now,
+            updatedAt: now,
+            cards: source.cards.map((card, index) => ({
+              ...card,
+              id: crypto.randomUUID(),
+              order: index,
+            })),
+          };
+
+          return {
+            sessions: [copy, ...state.sessions],
+            selectedSessionId: copy.id,
+            focusedCardId: copy.cards[0]?.id ?? null,
+          };
+        }),
+
+      deleteSession: (id) =>
+        set((state) => {
+          const nextSessions = state.sessions.filter((session) => session.id !== id);
+          const nextSelected =
+            state.selectedSessionId === id ? nextSessions[0]?.id ?? null : state.selectedSessionId;
+          const nextActive = state.activeSessionId === id ? null : state.activeSessionId;
+
+          return {
+            sessions: nextSessions,
+            selectedSessionId: nextSelected,
+            activeSessionId: nextActive,
+            focusedCardId: state.focusedCardId,
+          };
+        }),
+
+      selectSession: (id) =>
+        set((state) => ({
+          selectedSessionId: id,
+          focusedCardId: id
+            ? [...(state.sessions.find((session) => session.id === id)?.cards ?? [])].sort((a, b) => a.order - b.order)[0]?.id ?? null
+            : null,
+        })),
+
+      focusCard: (cardId) => set({ focusedCardId: cardId }),
+
+      updateSession: (id, patch) =>
+        set((state) => ({
+          sessions: state.sessions.map((session) =>
+            session.id === id
+              ? { ...session, ...patch, updatedAt: new Date() }
+              : session
+          ),
+        })),
+
+      addSessionCard: (sessionId, type) =>
+        set((state) => {
+          let nextFocusedCardId = state.focusedCardId;
+          const nextSessions = state.sessions.map((session) => {
+            if (session.id !== sessionId) return session;
+
+            const existingCard = session.cards.find((card) => card.type === type);
+            if (existingCard) {
+              nextFocusedCardId = existingCard.id;
+              return {
+                ...session,
+                cards: session.cards.map((card) =>
+                  card.id === existingCard.id
+                    ? ({ ...card, enabled: true } as PracticeSessionCard)
+                    : card
+                ),
+                updatedAt: new Date(),
+              };
+            }
+
+            const card = createSessionCard(type, session.cards.length);
+            nextFocusedCardId = card.id;
+
+            return {
+              ...session,
+              status: draftStatus(session.status),
+              cards: [...session.cards, card],
+              updatedAt: new Date(),
+            };
+          });
+
+          return {
+            focusedCardId: nextFocusedCardId,
+            sessions: nextSessions,
+          };
+        }),
+
+      removeSessionCard: (sessionId, cardId) =>
+        {
+          const session = get().sessions.find((entry) => entry.id === sessionId);
+          const removedCard = session?.cards.find((card) => card.id === cardId);
+          const stillHasEnabledOfType = session
+            ? session.cards.some((card) => card.id !== cardId && card.type === removedCard?.type && card.enabled)
+            : false;
+
+          if (removedCard?.type === "harmonium" && !stillHasEnabledOfType) {
+            useHarmoniumStore.getState().setDrone("off");
+          }
+          if (removedCard?.type === "tabla" && !stillHasEnabledOfType) {
+            useTablaStore.getState().setPlaying(false);
+            useTablaStore.getState().reset();
+          }
+
+          set((state) => {
+            let nextFocusedCardId = state.focusedCardId;
+            const nextSessions = state.sessions.map((sessionEntry) => {
+              if (sessionEntry.id !== sessionId) return sessionEntry;
+
+              const nextCards = normalizeCardOrder(sessionEntry.cards.filter((card) => card.id !== cardId));
+              if (state.focusedCardId === cardId) {
+                nextFocusedCardId = nextCards[0]?.id ?? null;
+              }
+
+              return {
+                ...sessionEntry,
+                status: draftStatus(sessionEntry.status),
+                cards: nextCards,
+                updatedAt: new Date(),
+              };
+            });
+
+            return {
+              focusedCardId: nextFocusedCardId,
+              sessions: nextSessions,
+            };
+          });
+        },
+
+      updateSessionCard: (sessionId, cardId, patch) =>
+        {
+          const session = get().sessions.find((entry) => entry.id === sessionId);
+          const currentCard = session?.cards.find((card) => card.id === cardId);
+          const disablesCard = patch.enabled === false && currentCard?.enabled;
+
+          if (disablesCard && currentCard?.type === "harmonium") {
+            const hasOtherEnabled = session
+              ? session.cards.some((card) => card.id !== cardId && card.type === "harmonium" && card.enabled)
+              : false;
+            if (!hasOtherEnabled) {
+              useHarmoniumStore.getState().setDrone("off");
+            }
+          }
+
+          if (disablesCard && currentCard?.type === "tabla") {
+            const hasOtherEnabled = session
+              ? session.cards.some((card) => card.id !== cardId && card.type === "tabla" && card.enabled)
+              : false;
+            if (!hasOtherEnabled) {
+              useTablaStore.getState().setPlaying(false);
+              useTablaStore.getState().reset();
+            }
+          }
+
+          set((state) => ({
+            sessions: state.sessions.map((sessionEntry) => {
+              if (sessionEntry.id !== sessionId) return sessionEntry;
+
+              const cards = sessionEntry.cards.map((card) =>
+                card.id === cardId ? ({ ...card, ...patch } as PracticeSessionCard) : card
+              );
+
+              return {
+                ...sessionEntry,
+                status: draftStatus(sessionEntry.status),
+                cards,
+                updatedAt: new Date(),
+              };
+            }),
+          }));
+        },
+
+      moveSessionCard: (sessionId, cardId, direction) =>
+        set((state) => ({
+          sessions: state.sessions.map((session) => {
+            if (session.id !== sessionId) return session;
+
+            const sorted = [...session.cards].sort((left, right) => left.order - right.order);
+            const currentIndex = sorted.findIndex((card) => card.id === cardId);
+            if (currentIndex === -1) return session;
+
+            const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+            if (targetIndex < 0 || targetIndex >= sorted.length) return session;
+
+            const nextCards = [...sorted];
+            [nextCards[currentIndex], nextCards[targetIndex]] = [nextCards[targetIndex], nextCards[currentIndex]];
+
+            return {
+              ...session,
+              cards: normalizeCardOrder(nextCards),
+              status: draftStatus(session.status),
+              updatedAt: new Date(),
+            };
+          }),
+        })),
+
+      playSession: (id) => {
+        const session = get().sessions.find((entry) => entry.id === id);
+        if (!session) return;
+
+        const harmoniumCard = session.cards
+          .filter((card): card is HarmoniumSessionCard => card.type === "harmonium")
+          .find((card) => card.enabled);
+        const tablaCard = session.cards
+          .filter((card): card is TablaSessionCard => card.type === "tabla")
+          .find((card) => card.enabled);
+
+        if (harmoniumCard) {
+          useHarmoniumStore.getState().applyConfig(harmoniumCard.config);
+        } else {
+          useHarmoniumStore.getState().setDrone("off");
+        }
+
+        if (tablaCard) {
+          useTablaStore.getState().applyConfig(tablaCard.config);
+        } else {
+          useTablaStore.getState().reset();
+        }
+
+        set((state) => ({
+          activeSessionId: id,
+          selectedSessionId: id,
+          focusedCardId: harmoniumCard?.id ?? tablaCard?.id ?? null,
+          sessions: state.sessions.map((entry) =>
+            entry.id === id
+              ? {
+                  ...entry,
+                  status: "playing",
+                  lastPlayedAt: new Date(),
+                  updatedAt: new Date(),
+                }
+              : entry.id === state.activeSessionId
+              ? { ...entry, status: entry.status === "playing" ? "saved" : entry.status }
+              : entry
+          ),
+        }));
+      },
+
+      pauseSession: (id) => {
+        useHarmoniumStore.getState().setDrone("off");
+        useTablaStore.getState().setPlaying(false);
+        set((state) => ({
+          activeSessionId: state.activeSessionId === id ? null : state.activeSessionId,
+          sessions: state.sessions.map((session) =>
+            session.id === id ? { ...session, status: "paused", updatedAt: new Date() } : session
+          ),
+        }));
+      },
+
+      completeSession: (id) => {
+        useHarmoniumStore.getState().setDrone("off");
+        useTablaStore.getState().setPlaying(false);
+        set((state) => ({
+          activeSessionId: state.activeSessionId === id ? null : state.activeSessionId,
+          sessions: state.sessions.map((session) =>
+            session.id === id ? { ...session, status: "completed", updatedAt: new Date() } : session
+          ),
+        }));
+      },
+
+      setSearchQuery: (query) => set({ searchQuery: query }),
+      setFilterMode: (mode) => set({ filterMode: mode }),
       setPlayingId: (id) => set({ playingId: id }),
     }),
     {
       name: "library-store",
-      partialize: (s) => ({ recordings: s.recordings, sessions: s.sessions }),
+      partialize: (state) => ({
+        recordings: state.recordings,
+        sessions: state.sessions,
+        selectedSessionId: state.selectedSessionId,
+        focusedCardId: state.focusedCardId,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        state.hasHydrated = true;
+        state.activeSessionId = null;
+        if (!state.selectedSessionId) {
+          state.selectedSessionId = state.sessions[0]?.id ?? null;
+        }
+        if (!state.focusedCardId) {
+          state.focusedCardId = [...(state.sessions[0]?.cards ?? [])].sort((a, b) => a.order - b.order)[0]?.id ?? null;
+        }
+      },
     }
   )
 );

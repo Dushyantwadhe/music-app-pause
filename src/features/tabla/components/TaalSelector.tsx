@@ -37,26 +37,26 @@ export function TaalSelector({ onStop }: TaalSelectorProps) {
               }
             }}
             className={cn(
-              "w-full text-left rounded-xl p-3 border transition-all duration-150",
+              "w-full cursor-pointer rounded border p-3 text-left transition-colors",
               "flex items-center justify-between group cursor-pointer",
               active
-                ? "bg-[#F59E0B]/10 border-[#F59E0B] text-[#F8FAFC]"
-                : "bg-[#1E293B] border-[#334155] text-[#94A3B8] hover:border-[#475569]"
+                ? "border-[#93c5fd] bg-[#eff6ff] text-[#1d4ed8]"
+                : "border-[#d1d5db] bg-white text-[#111827] hover:bg-[#f9fafb]"
             )}
             aria-pressed={active}
           >
             <div>
-              <p className={cn("text-sm font-semibold", active && "text-[#F59E0B]")}>
+              <p className={cn("text-sm font-semibold", active && "text-[#1d4ed8]")}>
                 {taal.name}
               </p>
-              <p className="text-xs text-[#475569] mt-0.5">{taal.description}</p>
+              <p className="mt-0.5 text-xs text-[#6b7280]">{taal.description}</p>
             </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={(e) => { e.stopPropagation(); toggleFavorite(taal.name); }}
               aria-label={fav ? "Remove from favorites" : "Add to favorites"}
-              className={cn("text-lg shrink-0", fav ? "text-[#F59E0B]" : "text-[#334155] hover:text-[#64748B]")}
+              className={cn("text-lg shrink-0", fav ? "text-[#1d4ed8]" : "text-[#6b7280]")}
             >
               {fav ? "★" : "☆"}
             </Button>

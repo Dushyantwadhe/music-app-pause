@@ -20,36 +20,32 @@ export function TablaView() {
   const { play, pause, stop, taal } = useTablaEngine();
 
   return (
-    <div className="flex flex-col gap-4 p-4 max-w-2xl mx-auto w-full">
-      {/* Header */}
+    <div className="flex w-full flex-col gap-2 p-1.5">
       <div>
-        <h1 className="text-lg font-bold text-[#F8FAFC] tracking-tight">Tabla</h1>
-        <p className="text-xs text-[#64748B]">Rhythm companion for riyaaz</p>
+        <h1 className="text-base font-bold text-[#111827]">Tabla</h1>
+        <p className="text-[11px] text-[#6b7280]">Rhythm companion for riyaaz</p>
       </div>
 
-      {/* Current taal card */}
-      <Card glow={isPlaying}>
-        <div className="flex items-center justify-between mb-3">
+      <Card glow={isPlaying} className="p-3">
+        <div className="mb-1.5 flex items-center justify-between">
           <div>
-            <p className="text-[10px] text-[#64748B] uppercase tracking-widest">Current Taal</p>
-            <h2 className="text-2xl font-bold text-[#F59E0B]">{selectedTaal}</h2>
+            <p className="text-[10px] uppercase tracking-widest text-[#6b7280]">Current Taal</p>
+            <h2 className="text-lg font-bold text-[#111827]">{selectedTaal}</h2>
             {taal && (
-              <p className="text-xs text-[#64748B] mt-0.5">{taal.description}</p>
+              <p className="mt-0.5 text-[11px] text-[#6b7280]">{taal.description}</p>
             )}
           </div>
           <div className="text-right">
-            <p className="text-3xl font-mono font-bold text-[#F8FAFC]">{bpm}</p>
-            <p className="text-[10px] text-[#64748B] uppercase tracking-wider">BPM</p>
+            <p className="text-xl font-mono font-bold text-[#111827]">{bpm}</p>
+            <p className="text-[10px] uppercase tracking-wider text-[#6b7280]">BPM</p>
           </div>
         </div>
 
-        {/* Beat visualizer */}
-        <div className="overflow-x-auto py-2">
+        <div className="overflow-x-auto py-1">
           <BeatVisualizer />
         </div>
 
-        {/* Playback controls */}
-        <div className="flex items-center gap-2 mt-4 flex-wrap">
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           {!isPlaying ? (
             <Button onClick={play} size="lg" className="min-w-[100px]">
               ▶ Play
@@ -83,9 +79,8 @@ export function TablaView() {
         </div>
       </Card>
 
-      {/* Controls */}
-      <Card>
-        <div className="flex flex-col gap-4">
+      <Card className="p-3">
+        <div className="flex flex-col gap-3">
           <Slider
             label="BPM"
             value={bpm}
@@ -102,12 +97,11 @@ export function TablaView() {
             onChange={setPitch}
             formatValue={(v) => (v === 0 ? "0" : v > 0 ? `+${v}` : `${v}`)}
           />
-          {/* BPM presets */}
           <div>
-            <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider mb-2">
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
               Tempo Presets
             </p>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex flex-wrap gap-1.5">
               {[40, 60, 80, 100, 120, 160].map((preset) => (
                 <Button
                   key={preset}
@@ -123,8 +117,7 @@ export function TablaView() {
         </div>
       </Card>
 
-      {/* Taal selector */}
-      <div>
+      <div className="pt-0.5">
         <SectionHeader title="Select Taal" />
         <TaalSelector onStop={stop} />
       </div>

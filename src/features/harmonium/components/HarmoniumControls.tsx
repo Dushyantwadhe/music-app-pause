@@ -62,7 +62,7 @@ export function HarmoniumControls() {
 
       {/* Drone selector */}
       <div>
-        <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider mb-2">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#6b7280]">
           Drone
         </p>
         <div className="flex gap-2 flex-wrap">

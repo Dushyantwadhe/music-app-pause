@@ -65,22 +65,22 @@ export function RecordingControls() {
 
   return (
     <Card>
-      <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider mb-3">
+      <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#6b7280]">
         Recording
       </p>
       <div className="flex flex-wrap gap-2 items-center">
         {!isRecording && !savedBlobUrl && (
           <Button variant="surface" size="sm" onClick={handleStart}>
-            <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#dc2626]" />
             Record
           </Button>
         )}
 
         {isRecording && (
           <>
-            <span className="flex items-center gap-1.5 text-xs text-[#EF4444] font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444] rec-dot" />
-              Recording…
+            <span className="flex items-center gap-1.5 text-xs font-medium text-[#dc2626]">
+              <span className="rec-dot h-2.5 w-2.5 rounded-full bg-[#dc2626]" />
+              Recording...
             </span>
             <Button variant="danger" size="sm" onClick={handleStop}>Stop</Button>
           </>
@@ -94,10 +94,8 @@ export function RecordingControls() {
                 type="text"
                 value={recordingName}
                 onChange={(e) => setRecordingName(e.target.value)}
-                placeholder="Name this recording…"
-                className="flex-1 min-w-0 text-sm bg-[#273548] border border-[#334155] rounded-lg
-                           px-3 py-1.5 text-[#F8FAFC] placeholder:text-[#475569]
-                           focus:outline-none focus:border-[#F59E0B] transition-colors"
+                placeholder="Name this recording..."
+                className="min-w-0 flex-1 rounded border border-[#d1d5db] px-3 py-1.5 text-sm text-[#111827] placeholder:text-[#9ca3af] focus:outline-none"
               />
               <Button size="sm" onClick={handleSave}>Save</Button>
               <Button variant="ghost" size="sm" onClick={handleDiscard}>Discard</Button>
@@ -106,7 +104,7 @@ export function RecordingControls() {
         )}
 
         {isRecording && recordedNotes.length > 0 && (
-          <span className="text-xs text-[#64748B]">{recordedNotes.length} notes</span>
+          <span className="text-xs text-[#6b7280]">{recordedNotes.length} notes</span>
         )}
       </div>
     </Card>

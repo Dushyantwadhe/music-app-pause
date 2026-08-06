@@ -41,10 +41,10 @@ export function BeatVisualizer() {
             <span
               className={cn(
                 "text-[11px] font-bold tracking-widest",
-                isSam    && !isKhali && "text-[#F59E0B]",
-                isKhali  && !isSam   && "text-[#475569]",
-                isSam    && isKhali  && "text-[#F59E0B]/60", // Rupak sam
-                !isSam   && !isKhali && "text-[#64748B]"
+                isSam && !isKhali && "text-[#1d4ed8]",
+                isKhali && !isSam && "text-[#6b7280]",
+                isSam && isKhali && "text-[#1d4ed8]/60",
+                !isSam && !isKhali && "text-[#6b7280]"
               )}
             >
               {marker}
@@ -66,27 +66,21 @@ export function BeatVisualizer() {
                       className={cn(
                         "w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold",
                         "border-2 transition-all duration-75 select-none",
-                        // Active beat
                         isActive &&
-                          "bg-[#F59E0B] text-[#0F172A] border-[#F59E0B] shadow-lg shadow-amber-900/60 scale-110",
-                        // Sam (first beat of cycle)
+                          "bg-[#dbeafe] text-[#1d4ed8] border-[#93c5fd] scale-105",
                         !isActive && beat.isSam && !beat.isKhali &&
-                          "bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/60",
-                        // Rupak sam (sam that is also khali)
+                          "bg-[#eff6ff] text-[#1d4ed8] border-[#93c5fd]",
                         !isActive && beat.isSam && beat.isKhali &&
-                          "bg-[#F59E0B]/10 text-[#F59E0B]/60 border-[#F59E0B]/30",
-                        // Khali beat
+                          "bg-[#eff6ff] text-[#1d4ed8]/60 border-[#bfdbfe]",
                         !isActive && !beat.isSam && beat.isKhali &&
-                          "bg-[#1E293B] text-[#475569] border-[#334155]",
-                        // Normal beat
+                          "bg-[#f9fafb] text-[#6b7280] border-[#d1d5db]",
                         !isActive && !beat.isSam && !beat.isKhali &&
-                          "bg-[#273548] text-[#94A3B8] border-[#334155]"
+                          "bg-white text-[#374151] border-[#d1d5db]"
                       )}
                     >
                       {beat.syllable}
                     </div>
-                    {/* Beat number */}
-                    <span className="text-[9px] text-[#475569] font-mono">
+                    <span className="text-[9px] font-mono text-[#6b7280]">
                       {beat.index + 1}
                     </span>
                   </div>
@@ -99,13 +93,13 @@ export function BeatVisualizer() {
 
       {/* Legend */}
       <div className="flex gap-3 flex-wrap pt-1">
-        <span className="flex items-center gap-1 text-[9px] text-[#475569]">
-          <span className="font-bold text-[#F59E0B]">X</span> Sam (first beat)
+        <span className="flex items-center gap-1 text-[9px] text-[#6b7280]">
+          <span className="font-bold text-[#1d4ed8]">X</span> Sam (first beat)
         </span>
-        <span className="flex items-center gap-1 text-[9px] text-[#475569]">
-          <span className="font-bold text-[#64748B]">2,3…</span> Tali (strong beat)
+        <span className="flex items-center gap-1 text-[9px] text-[#6b7280]">
+          <span className="font-bold text-[#6b7280]">2,3...</span> Tali (strong beat)
         </span>
-        <span className="flex items-center gap-1 text-[9px] text-[#475569]">
+        <span className="flex items-center gap-1 text-[9px] text-[#6b7280]">
           <span className="font-bold">0</span> Khali (empty beat)
         </span>
       </div>

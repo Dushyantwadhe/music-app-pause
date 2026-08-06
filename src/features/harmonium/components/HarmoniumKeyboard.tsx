@@ -59,7 +59,7 @@ export function HarmoniumKeyboard({ onNoteOn, onNoteOff }: KeyboardProps) {
     >
       <div
         className="relative flex"
-        style={{ minWidth: `${whites.length * 38}px`, height: 160 }}
+        style={{ minWidth: `${whites.length * 30}px`, height: 120 }}
       >
         {/* White keys */}
         {whites.map((key) => {
@@ -72,7 +72,7 @@ export function HarmoniumKeyboard({ onNoteOn, onNoteOff }: KeyboardProps) {
                 "piano-white-key flex-1 flex flex-col justify-end items-center pb-2",
                 active && "active"
               )}
-              style={{ height: 160 }}
+              style={{ height: 120 }}
               aria-label={`${key.label} octave ${key.octave}`}
               {...pointerHandlers(key.note)}
             >
@@ -99,7 +99,7 @@ export function HarmoniumKeyboard({ onNoteOn, onNoteOff }: KeyboardProps) {
               style={{
                 left:   blackLeft(key),
                 width:  `${whiteWidth * 0.58}%`,
-                height: 96,
+                height: 72,
                 top:    0,
               }}
               aria-label={`${key.label} octave ${key.octave}`}

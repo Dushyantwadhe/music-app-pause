@@ -5,9 +5,6 @@ import { useHarmoniumStore } from "@/store/useHarmoniumStore";
 import {
   playNote,
   stopNote,
-  setMasterVolume,
-  startDrone,
-  stopDrone,
 } from "../engine/audioEngine";
 import { KEY_MAP } from "../data/keys";
 
@@ -19,7 +16,6 @@ export function useHarmoniumEngine() {
     sustain,
     octave,
     transpose,
-    drone,
     addActiveNote,
     removeActiveNote,
     isRecording,
@@ -28,19 +24,6 @@ export function useHarmoniumEngine() {
 
   const pressedKeys       = useRef<Set<string>>(new Set());
   const noteStartTimes    = useRef<Map<string, number>>(new Map());
-
-  // Sync master volume
-  useEffect(() => { setMasterVolume(volume); }, [volume]);
-
-  // Drone management
-  useEffect(() => {
-    if (drone === "off") {
-      stopDrone();
-    } else {
-      startDrone(drone, octave, volume, transpose);
-    }
-    return () => { stopDrone(); };
-  }, [drone, octave, transpose, volume]);
 
   const handleNoteOn = useCallback((note: string) => {
     if (pressedKeys.current.has(note)) return;

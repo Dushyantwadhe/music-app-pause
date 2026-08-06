@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { DroneMode } from "@/types";
+import type { DroneMode, HarmoniumSessionConfig } from "@/types";
 
 interface HarmoniumState {
   volume: number;
@@ -18,6 +18,7 @@ interface HarmoniumState {
   setOctave: (v: number) => void;
   setTranspose: (v: number) => void;
   setDrone: (d: DroneMode) => void;
+  applyConfig: (config: HarmoniumSessionConfig) => void;
   addActiveNote: (note: string) => void;
   removeActiveNote: (note: string) => void;
   startRecording: () => void;
@@ -44,6 +45,14 @@ export const useHarmoniumStore = create<HarmoniumState>()(
       setOctave: (v) => set({ octave: v }),
       setTranspose: (v) => set({ transpose: v }),
       setDrone: (d) => set({ drone: d }),
+      applyConfig: (config) =>
+        set({
+          volume: config.volume,
+          sustain: config.sustain,
+          octave: config.octave,
+          transpose: config.transpose,
+          drone: config.autoEnableDrone ? config.drone : "off",
+        }),
 
       addActiveNote: (note) =>
         set((s) => ({ activeNotes: new Set([...s.activeNotes, note]) })),

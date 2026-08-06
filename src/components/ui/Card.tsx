@@ -10,8 +10,8 @@ export function Card({ children, className, glow }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-2xl bg-[#1E293B] border border-[#334155] p-4",
-        glow && "glow-primary",
+        "rounded border border-[#d1d5db] bg-white p-3",
+        glow && "shadow-sm",
         className
       )}
     >
@@ -29,10 +29,10 @@ interface SectionHeaderProps {
 
 export function SectionHeader({ title, subtitle, action, className }: SectionHeaderProps) {
   return (
-    <div className={cn("flex items-center justify-between mb-4", className)}>
+    <div className={cn("mb-3 flex items-center justify-between", className)}>
       <div>
-        <h2 className="text-base font-semibold text-[#F8FAFC]">{title}</h2>
-        {subtitle && <p className="text-xs text-[#64748B] mt-0.5">{subtitle}</p>}
+        <h2 className="text-base font-semibold text-[#111827]">{title}</h2>
+        {subtitle && <p className="text-xs text-[#6b7280]">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -50,10 +50,10 @@ export function TabChip({ label, active, onClick }: TabChipProps) {
     <button
       onClick={onClick}
       className={cn(
-        "px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
+        "rounded border px-3 py-1.5 text-xs font-medium",
         active
-          ? "bg-[#F59E0B] text-[#0F172A]"
-          : "bg-[#273548] text-[#64748B] hover:text-[#94A3B8]"
+          ? "border-[#2563eb] bg-[#eff6ff] text-[#1d4ed8]"
+          : "border-[#d1d5db] bg-white text-[#374151] hover:bg-[#f9fafb]"
       )}
     >
       {label}
@@ -70,11 +70,11 @@ export function Badge({ children, variant = "muted" }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
-        variant === "primary" && "bg-[#F59E0B]/15 text-[#F59E0B]",
-        variant === "success" && "bg-[#22C55E]/15 text-[#22C55E]",
-        variant === "danger"  && "bg-[#EF4444]/15 text-[#EF4444]",
-        variant === "muted"   && "bg-[#273548] text-[#64748B]"
+        "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium",
+        variant === "primary" && "bg-[#eff6ff] text-[#1d4ed8]",
+        variant === "success" && "bg-[#ecfdf5] text-[#047857]",
+        variant === "danger" && "bg-[#fef2f2] text-[#b91c1c]",
+        variant === "muted" && "bg-[#f3f4f6] text-[#4b5563]"
       )}
     >
       {children}

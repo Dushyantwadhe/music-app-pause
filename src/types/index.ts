@@ -40,16 +40,61 @@ export interface Recording {
 
 // ─── Practice Sessions ─────────────────────────────────────────────────────────
 
+export type SessionStatus = "draft" | "saved" | "playing" | "paused" | "completed";
+
+export interface HarmoniumSessionConfig {
+  volume: number;
+  sustain: number;
+  octave: number;
+  transpose: number;
+  drone: DroneMode;
+  autoEnableDrone: boolean;
+}
+
+export interface TablaSessionConfig {
+  taalName: TaalName;
+  bpm: number;
+  pitch: number;
+  isLooping: boolean;
+  isMetronomeMode: boolean;
+  autoPlay: boolean;
+}
+
+export interface SessionCardBase {
+  id: string;
+  title: string;
+  enabled: boolean;
+  order: number;
+}
+
+export interface HarmoniumSessionCard extends SessionCardBase {
+  type: "harmonium";
+  config: HarmoniumSessionConfig;
+}
+
+export interface TablaSessionCard extends SessionCardBase {
+  type: "tabla";
+  config: TablaSessionConfig;
+}
+
+export type PracticeSessionCard = HarmoniumSessionCard | TablaSessionCard;
+
 export interface PracticeSession {
   id: string;
   uid: string;
+  name: string;
+  description: string;
+  status: SessionStatus;
+  cards: PracticeSessionCard[];
+  lastPlayedAt: Date | null;
   startedAt: Date;
   endedAt: Date;
   durationMinutes: number;
   instrument: "harmonium" | "tabla" | "mixed";
-  taalName?: string;
-  bpm?: number;
   notes: string;
+  isTemplate: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // ─── Favorites ─────────────────────────────────────────────────────────────────

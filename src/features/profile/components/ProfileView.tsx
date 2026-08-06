@@ -28,45 +28,40 @@ export function ProfileView() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 max-w-2xl mx-auto w-full">
-      {/* Header */}
+    <div className="flex flex-col gap-3">
       <div>
-        <h1 className="text-lg font-bold text-[#F8FAFC] tracking-tight">Profile</h1>
-        <p className="text-xs text-[#64748B]">Your practice stats & settings</p>
+        <h1 className="text-base font-bold text-[#111827]">Profile</h1>
+        <p className="text-[11px] text-[#6b7280]">Your practice stats and settings</p>
       </div>
 
-      {/* Auth card */}
-      <Card>
+      <Card className="p-3">
         {user ? (
-          <div className="flex items-center gap-3">
-            {/* Avatar */}
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#273548] shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-[#e5e7eb]">
               {user.photoURL ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-xl text-[#64748B]">
+                <div className="flex h-full w-full items-center justify-center text-xl text-[#6b7280]">
                   {user.displayName?.[0]?.toUpperCase() ?? "?"}
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-[#F8FAFC] truncate">{user.displayName}</p>
-              <p className="text-xs text-[#64748B] truncate">{user.email}</p>
+              <p className="truncate text-xs font-semibold text-[#111827]">{user.displayName}</p>
+              <p className="truncate text-[11px] text-[#6b7280]">{user.email}</p>
             </div>
             <Button variant="outline" size="sm" onClick={signOut}>
               Sign out
             </Button>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-4 py-4">
-            <p className="text-sm text-[#94A3B8] text-center">
+          <div className="flex flex-col items-center gap-3 py-2">
+            <p className="text-center text-xs text-[#6b7280]">
               Sign in to sync your practice data across devices
             </p>
             <Button
               size="md"
               onClick={() => {
-                // Firebase Auth handled here – see services/auth.ts
                 alert("Firebase Auth: Configure NEXT_PUBLIC_FIREBASE_* env vars to enable Google Sign-In");
               }}
               className="gap-2"
@@ -77,30 +72,28 @@ export function ProfileView() {
         )}
       </Card>
 
-      {/* Stats */}
       <div>
         <SectionHeader title="Practice Stats" />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           {stats.map(({ label, value }) => (
-            <Card key={label} className="flex flex-col gap-1">
-              <p className="text-2xl font-bold text-[#F59E0B]">{value}</p>
-              <p className="text-xs text-[#64748B]">{label}</p>
+            <Card key={label} className="flex flex-col gap-0.5 p-2.5">
+              <p className="text-lg font-bold text-[#111827]">{value}</p>
+              <p className="text-[11px] text-[#6b7280]">{label}</p>
             </Card>
           ))}
         </div>
       </div>
 
-      {/* Favorite taals */}
       {favoriteTaals.length > 0 && (
-        <Card>
-          <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider mb-2">
+        <Card className="p-3">
+          <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
             Favorite Taals
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {favoriteTaals.map((t) => (
               <span
                 key={t}
-                className="px-3 py-1 rounded-full bg-[#F59E0B]/10 text-[#F59E0B] text-xs font-medium"
+                className="rounded border border-[#d1d5db] bg-[#f9fafb] px-2 py-0.5 text-[11px] font-medium text-[#374151]"
               >
                 {t}
               </span>
@@ -109,10 +102,9 @@ export function ProfileView() {
         </Card>
       )}
 
-      {/* Settings */}
       <div>
         <SectionHeader title="Settings" />
-        <Card className="flex flex-col gap-4">
+        <Card className="flex flex-col gap-3 p-3">
           <Slider
             label="Default BPM"
             value={settings.defaultBPM}
@@ -137,10 +129,8 @@ export function ProfileView() {
             onChange={(v) => patchSetting("defaultOctave", v)}
             formatValue={(v) => `Oct ${v}`}
           />
-
-          {/* Drone default */}
           <div>
-            <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider mb-2">
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
               Default Drone
             </p>
             <div className="flex gap-2 flex-wrap">
@@ -156,10 +146,8 @@ export function ProfileView() {
               ))}
             </div>
           </div>
-
-          {/* Audio latency */}
           <div>
-            <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider mb-2">
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-[#6b7280]">
               Audio Quality
             </p>
             <div className="flex gap-2 flex-wrap">
@@ -179,9 +167,8 @@ export function ProfileView() {
         </Card>
       </div>
 
-      {/* Future */}
-      <div className="rounded-xl border border-dashed border-[#334155] p-4 opacity-40">
-        <p className="text-xs text-[#475569]">
+      <div className="rounded border border-dashed border-[#d1d5db] p-2.5">
+        <p className="text-[11px] text-[#6b7280]">
           AI practice recommendations · Cloud sync · Advanced stats — Coming soon
         </p>
       </div>

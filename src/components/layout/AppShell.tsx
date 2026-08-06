@@ -10,18 +10,11 @@ interface AppShellProps {
 
 export function AppShell({ children, className }: AppShellProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-[#0F172A]">
-      {/* Main content – scrollable above bottom nav */}
-      <main
-        className={cn(
-          "flex-1 flex flex-col overflow-y-auto",
-          "pb-20", // space for bottom nav
-          className
-        )}
-      >
+    <div className="min-h-screen bg-[#f6f7f9] text-[#111827]">
+      <BottomNav />
+      <main className={cn("mx-auto w-full max-w-6xl px-3 py-2 md:px-4 md:py-3", className)}>
         {children}
       </main>
-      <BottomNav />
     </div>
   );
 }

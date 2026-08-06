@@ -1,5 +1,10 @@
-import { redirect } from "next/navigation";
+import { AppShell } from "@/components/layout/AppShell";
+import { HomeSessionsView } from "@/features/library/components/HomeSessionsView";
 
 export default function RootPage() {
-  redirect("/harmonium");
+  return (
+    <AppShell>
+      <HomeSessionsView />
+    </AppShell>
+  );
 }

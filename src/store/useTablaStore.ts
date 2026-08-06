@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { TaalName } from "@/types";
+import type { TablaSessionConfig, TaalName } from "@/types";
 
 interface TablaState {
   selectedTaal: TaalName;
@@ -20,6 +20,7 @@ interface TablaState {
   toggleLoop: () => void;
   toggleMetronome: () => void;
   toggleFavorite: (t: TaalName) => void;
+  applyConfig: (config: TablaSessionConfig) => void;
   reset: () => void;
 }
 
@@ -48,6 +49,16 @@ export const useTablaStore = create<TablaState>()(
             ? s.favoriteTaals.filter((x) => x !== t)
             : [...s.favoriteTaals, t],
         })),
+      applyConfig: (config) =>
+        set({
+          selectedTaal: config.taalName,
+          bpm: Math.max(40, Math.min(240, config.bpm)),
+          pitch: config.pitch,
+          isLooping: config.isLooping,
+          isMetronomeMode: config.isMetronomeMode,
+          isPlaying: config.autoPlay,
+          currentBeat: 0,
+        }),
       reset: () => set({ isPlaying: false, currentBeat: 0 }),
     }),
     {

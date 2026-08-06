@@ -1,10 +1,5 @@
-import { AppShell } from "@/components/layout/AppShell";
-import { LibraryView } from "@/features/library/components/LibraryView";
+import { redirect } from "next/navigation";
 
 export default function LibraryPage() {
-  return (
-    <AppShell>
-      <LibraryView />
-    </AppShell>
-  );
+  redirect("/");
 }

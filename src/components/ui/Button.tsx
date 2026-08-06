@@ -15,24 +15,23 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center font-medium rounded-xl",
-          "transition-all duration-150 active:scale-95 focus-visible:outline",
-          "focus-visible:outline-2 focus-visible:outline-[#F59E0B] focus-visible:outline-offset-2",
+          "inline-flex items-center justify-center rounded border font-medium",
+          "transition-colors focus-visible:outline-none",
           "disabled:opacity-40 disabled:pointer-events-none",
           variant === "primary" &&
-            "bg-[#F59E0B] text-[#0F172A] hover:bg-[#FBBF24] shadow-lg shadow-amber-900/30",
+            "border-[#2563eb] bg-[#2563eb] text-white hover:bg-[#1d4ed8]",
           variant === "ghost" &&
-            "bg-transparent text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#1E293B]",
+            "border-transparent bg-transparent text-[#374151] hover:bg-[#f3f4f6]",
           variant === "danger" &&
-            "bg-[#EF4444]/10 text-[#EF4444] hover:bg-[#EF4444]/20",
+            "border-[#dc2626] bg-[#dc2626] text-white hover:bg-[#b91c1c]",
           variant === "surface" &&
-            "bg-[#1E293B] text-[#F8FAFC] hover:bg-[#273548] border border-[#334155]",
+            "border-[#d1d5db] bg-white text-[#111827] hover:bg-[#f9fafb]",
           variant === "outline" &&
-            "bg-transparent border border-[#334155] text-[#94A3B8] hover:border-[#F59E0B] hover:text-[#F59E0B]",
-          size === "sm"   && "h-8  px-3  text-xs  gap-1.5",
-          size === "md"   && "h-10 px-4  text-sm  gap-2",
-          size === "lg"   && "h-12 px-6  text-base gap-2.5",
-          size === "icon" && "h-10 w-10  text-sm",
+            "border-[#d1d5db] bg-white text-[#111827] hover:bg-[#f9fafb]",
+          size === "sm" && "h-8 px-3 text-xs gap-1",
+          size === "md" && "h-9 px-4 text-sm gap-1.5",
+          size === "lg" && "h-10 px-5 text-base gap-2",
+          size === "icon" && "h-9 w-9 text-sm",
           className
         )}
         {...props}
